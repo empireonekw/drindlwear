@@ -14,6 +14,10 @@
   gap: 32px;
 }
 
+.mobile-menu-arrow {
+  display: none;
+}
+
 .mobile-menu-header,
 .mobile-menu-benefits {
   display: none;
@@ -195,6 +199,7 @@
   }
 
   .mobile-menu-arrow {
+    display: block;
     flex: 0 0 auto;
     color: #786565;
   }
@@ -257,10 +262,6 @@
 
   .header-actions {
     gap: 5px;
-  }
-
-  .header-actions a[aria-label="Account"] {
-    display: none;
   }
 
   .brand-logo {
