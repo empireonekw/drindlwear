@@ -1,1 +1,26 @@
-import "./globals.css"; import "./header-spacing.css"; import "./responsive.css"; import "./motion.css"; import { StoreProvider } from "@/components/store"; import type { Metadata } from "next"; export const metadata: Metadata = { title: "Dirndl Wear | Traditional Dresses", description: "Premium traditional Bavarian and Alpine fashion storefront" }; export default function RootLayout({ children }: { children: React.ReactNode }) { return <html lang="en"><body><StoreProvider>{children}</StoreProvider></body></html> }
+import "./globals.css";
+import "./header-spacing.css";
+import "./responsive.css";
+import "./motion.css";
+
+import { StoreProvider } from "@/components/store";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dirndl Wear | Traditional Dresses",
+  description: "Premium traditional Bavarian and Alpine fashion storefront",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <StoreProvider>{children}</StoreProvider>
+      </body>
+    </html>
+  );
+}
