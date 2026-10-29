@@ -1,1 +1,87 @@
-"use client";import "./admin-layout.css";import Link from "next/link";import {LayoutDashboard,Package,ShoppingCart,Users,Tags,Image,Settings,Store} from "lucide-react";const links=[{name:"Overview",url:"/admin",icon:LayoutDashboard},{name:"Products",url:"/admin/products",icon:Package},{name:"Orders",url:"/admin/orders",icon:ShoppingCart},{name:"Customers",url:"/admin/customers",icon:Users},{name:"Categories",url:"/admin/categories",icon:Tags},{name:"Content",url:"/admin/content",icon:Image},{name:"Settings",url:"/admin/settings",icon:Settings},{name:"View Store",url:"/",icon:Store}];export default function AdminLayout({children}:{children:React.ReactNode}){return <div className="admin-shell"><aside className="admin-sidebar"><Link href="/" className="admin-brand"><img src="/brand/dirndl-wear-logo1.png" alt="Dirndl Wear"/></Link><div className="admin-sidebar-label">ADMIN</div>{links.map(({name,url,icon:Icon})=><Link key={url} href={url}><Icon size={18}/>{name}</Link>)}</aside><main className="admin-main"><div className="notice">Admin demo: No authentication or server database. Changes persist in this browser only.</div>{children}</main></div>}
+"use client";
+
+import "./admin-layout.css";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { LayoutDashboard, Package, ShoppingCart, Users, Tags, Image, Settings, Store, Menu, X } from "lucide-react";
+
+const links = [
+  { name: "Overview", url: "/admin", icon: LayoutDashboard },
+  { name: "Products", url: "/admin/products", icon: Package },
+  { name: "Orders", url: "/admin/orders", icon: ShoppingCart },
+  { name: "Customers", url: "/admin/customers", icon: Users },
+  { name: "Categories", url: "/admin/categories", icon: Tags },
+  { name: "Content", url: "/admin/content", icon: Image },
+  { name: "Settings", url: "/admin/settings", icon: Settings },
+  { name: "View Store", url: "/", icon: Store },
+];
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen]);
+
+  return (
+    <div className="admin-shell">
+      <aside className={menuOpen ? "admin-sidebar menu-open" : "admin-sidebar"}>
+        <Link href="/" className="admin-brand">
+          <img src="/brand/dirndl-wear-logo1.png" alt="Dirndl Wear" />
+        </Link>
+        <div className="admin-sidebar-label">ADMIN</div>
+        <button
+          className="admin-menu-toggle"
+          type="button"
+          aria-label={menuOpen ? "Close admin menu" : "Open admin menu"}
+          aria-expanded={menuOpen}
+          aria-controls="admin-navigation"
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+        <nav id="admin-navigation" className={menuOpen ? "admin-nav open" : "admin-nav"} aria-label="Admin navigation">
+          <div className="admin-nav-header">
+            <span>ADMIN MENU</span>
+            <button type="button" aria-label="Close admin menu" onClick={() => setMenuOpen(false)}>
+              <X size={22} />
+            </button>
+          </div>
+          {links.map(({ name, url, icon: Icon }) => {
+            const active = url === "/admin"
+              ? pathname === url
+              : url === "/"
+                ? pathname === url
+                : pathname === url || pathname.startsWith(`${url}/`);
+            return (
+                <Link key={url} href={url} aria-current={active ? "page" : undefined} onClick={() => setMenuOpen(false)}>
+                <Icon size={18} />
+                {name}
+              </Link>
+            );
+          })}
+        </nav>
+        {menuOpen && <button className="admin-nav-backdrop" type="button" aria-label="Close admin menu" onClick={() => setMenuOpen(false)} />}
+      </aside>
+      <main className="admin-main">
+        <div className="notice">Admin demo: No authentication or server database. Changes persist in this browser only.</div>
+        {children}
+      </main>
+    </div>
+  );
+}
