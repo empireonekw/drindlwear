@@ -6,22 +6,29 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "tsx scripts/seed.ts",
+    "promote-first-user": "tsx scripts/promote-first-user.ts"
   },
   "dependencies": {
+    "cloudinary": "^2.11.0",
+    "jose": "^6.2.14",
+    "lucide-react": "^0.468.0",
+    "mongoose": "^9.11.4",
     "next": "^14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "lucide-react": "^0.468.0",
     "recharts": "^2.15.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.3",
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
-    "tailwindcss": "^3.4.17",
+    "autoprefixer": "^10.4.20",
+    "dotenv": "^18.0.9",
     "postcss": "^8.4.49",
-    "autoprefixer": "^10.4.20"
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
   }
 }

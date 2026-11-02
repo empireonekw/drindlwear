@@ -204,6 +204,39 @@ export function Header() {
   );
 }
 export function Footer() {
+  const [newsletterMessage, setNewsletterMessage] = useState("");
+
+  async function subscribe(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNewsletterMessage("");
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.get("email") }),
+      });
+      const payload: unknown = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          typeof payload === "object" &&
+            payload !== null &&
+            "error" in payload &&
+            typeof payload.error === "string"
+            ? payload.error
+            : "Could not subscribe.",
+        );
+      }
+      setNewsletterMessage("Thank you for subscribing.");
+      form.reset();
+    } catch (error) {
+      setNewsletterMessage(
+        error instanceof Error ? error.message : "Could not subscribe.",
+      );
+    }
+  }
+
   return (
     <footer className="footer">
       <div className="footer-grid">
@@ -249,18 +282,17 @@ export function Footer() {
           <h4>NEWSLETTER</h4>
           <p>New collections, offers and inspiration delivered to your inbox.</p>
           <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              alert("Newsletter demo: Thank you!");
-            }}
+            onSubmit={subscribe}
           >
             <input
               type="email"
+              name="email"
               required
               placeholder="Your email address"
             />
             <button className="btn">SUBSCRIBE</button>
           </form>
+          {newsletterMessage && <p role="status">{newsletterMessage}</p>}
         </div>
       </div>
       <div className="footer-bottom">

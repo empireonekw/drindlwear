@@ -24,11 +24,11 @@
 
 .hero {
   min-height: 520px;
-  background-position: center;
+  background-position: center top;
 }
 
 .hero:before {
-  background: linear-gradient(90deg, rgb(20 16 17 / 78%) 0%, rgb(20 16 17 / 48%) 48%, rgb(20 16 17 / 8%) 100%);
+  background: linear-gradient(90deg, rgb(20 16 17 / 62%) 0%, rgb(20 16 17 / 36%) 48%, rgb(20 16 17 / 5%) 100%);
 }
 
 .hero-content {

@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LayoutDashboard, Package, ShoppingCart, Users, Tags, Image, Settings, Store, Menu, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import { useStore } from "@/components/store";
 
 const links = [
   { name: "Overview", url: "/admin", icon: LayoutDashboard },
@@ -19,7 +22,66 @@ const links = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { refreshOrders } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [access, setAccess] = useState<"checking" | "allowed" | "denied" | "error">("checking");
+  const [accessError, setAccessError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    async function verifyAdmin() {
+      try {
+        const response = await fetch("/api/auth/me", { cache: "no-store" });
+        const payload: unknown = await response.json();
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.replace("/account");
+            if (active) setAccess("denied");
+            return;
+          }
+          throw new Error(
+            typeof payload === "object" &&
+              payload !== null &&
+              "error" in payload &&
+              typeof payload.error === "string"
+              ? payload.error
+              : "Could not verify admin access.",
+          );
+        }
+
+        const role =
+          typeof payload === "object" &&
+          payload !== null &&
+          "user" in payload &&
+          typeof payload.user === "object" &&
+          payload.user !== null &&
+          "role" in payload.user
+            ? payload.user.role
+            : null;
+        if (role !== "admin") {
+          router.replace("/");
+          if (active) setAccess("denied");
+          return;
+        }
+
+        await refreshOrders();
+        if (active) setAccess("allowed");
+      } catch (error) {
+        if (active) {
+          setAccessError(
+            error instanceof Error ? error.message : "Could not verify admin access.",
+          );
+          setAccess("error");
+        }
+      }
+    }
+
+    void verifyAdmin();
+    return () => {
+      active = false;
+    };
+  }, [refreshOrders, router]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -37,6 +99,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [menuOpen]);
+
+  async function signOut() {
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        setAccessError("Could not sign out. Please try again.");
+        return;
+      }
+      window.dispatchEvent(new Event("dw-auth-changed"));
+      router.replace("/account");
+    } catch (error) {
+      setAccessError(
+        error instanceof Error ? error.message : "Could not sign out.",
+      );
+    }
+  }
+
+  if (access === "checking" || access === "denied") {
+    return <div className="container py-12">Checking admin access...</div>;
+  }
+  if (access === "error") {
+    return (
+      <div className="container py-12" role="alert">
+        Admin access could not be verified: {accessError}
+      </div>
+    );
+  }
 
   return (
     <div className="admin-shell">
@@ -79,7 +168,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {menuOpen && <button className="admin-nav-backdrop" type="button" aria-label="Close admin menu" onClick={() => setMenuOpen(false)} />}
       </aside>
       <main className="admin-main">
-        <div className="notice">Admin demo: No authentication or server database. Changes persist in this browser only.</div>
+        <div className="notice">
+          Admin session is active.
+          <button type="button" className="ml-3 underline" onClick={signOut}>
+            Sign out
+          </button>
+        </div>
         {children}
       </main>
     </div>

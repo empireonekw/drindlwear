@@ -17,6 +17,7 @@ export default function Detail() {
   const [size, setSize] = useState("38");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [stockMessage, setStockMessage] = useState("");
 
   if (!product) {
     return <div className="empty">Product not found.</div>;
@@ -25,11 +26,15 @@ export default function Detail() {
   const productId = product.id;
 
   function addToCart() {
-    for (let index = 0; index < quantity; index++) {
-      add(productId);
+    if (!add(productId, quantity)) {
+      setStockMessage("Requested quantity exceeds available stock.");
+      return;
     }
+    setStockMessage("");
     setAdded(true);
   }
+
+  const outOfStock = product.stock <= 0;
 
   return (
     <div className="container">
@@ -60,6 +65,13 @@ export default function Detail() {
           </p>
           <p>Includes VAT; shipping calculated at checkout</p>
           <p>{product.description}</p>
+          {outOfStock ? (
+            <p className="stock-error" role="status">Out of stock</p>
+          ) : product.stock <= 5 ? (
+            <p className="stock-note" role="status">Only {product.stock} left in stock</p>
+          ) : (
+            <p className="stock-note" role="status">{product.stock} in stock</p>
+          )}
           <p>
             <strong>Color:</strong> {product.color}
           </p>
@@ -82,15 +94,25 @@ export default function Detail() {
           <div className="flex gap-3 items-center">
             <div className="qty">
               <button
+                disabled={quantity <= 1}
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
               >
                 −
               </button>
               {quantity}
-              <button onClick={() => setQuantity(quantity + 1)}>+</button>
+              <button
+                disabled={quantity >= Math.min(product.stock, 50)}
+                onClick={() => setQuantity(quantity + 1)}
+              >
+                +
+              </button>
             </div>
-            <button className="btn flex-1" onClick={addToCart}>
-              {added ? "ADDED ✓" : "ADD TO CART"}
+            <button
+              className="btn flex-1"
+              onClick={addToCart}
+              disabled={outOfStock}
+            >
+              {outOfStock ? "OUT OF STOCK" : added ? "ADDED ✓" : "ADD TO CART"}
             </button>
             <button
               onClick={() => toggleWish(product.id)}
@@ -101,6 +123,7 @@ export default function Detail() {
               />
             </button>
           </div>
+          {stockMessage && <p className="stock-error" role="alert">{stockMessage}</p>}
 
           <div className="row-line">
             <span className="flex gap-3">

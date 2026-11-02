@@ -12,37 +12,49 @@ const blank = {
   stock: "",
   color: "",
   image: "",
+  imagePublicId: "",
 };
 
 export default function Products() {
-  const { products, setProducts } = useStore();
+  const { products, saveProduct, deleteProduct } = useStore();
   const [form, setForm] = useState(blank);
   const [edit, setEdit] = useState<number | null>(null);
   const [show, setShow] = useState(false);
   const [query, setQuery] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-  function save(event: React.FormEvent) {
+  async function save(event: React.FormEvent) {
     event.preventDefault();
+    setError("");
+    if (!form.image) {
+      setError("Choose and upload a product image before saving.");
+      return;
+    }
+    setSaving(true);
 
-    const product: Product = {
-      id: edit ?? Date.now(),
-      name: form.name,
-      category: form.category,
-      price: Number(form.price),
-      stock: Number(form.stock),
-      color: form.color,
-      image: form.image || "/images/asset-06.webp",
-      description: "Product description",
-    };
+    try {
+      const product: Omit<Product, "id"> = {
+        name: form.name,
+        category: form.category,
+        price: Number(form.price),
+        stock: Number(form.stock),
+        color: form.color,
+        image: form.image,
+        imagePublicId: form.imagePublicId || undefined,
+        description: "Product description",
+      };
 
-    setProducts((currentProducts) =>
-      edit
-        ? currentProducts.map((item) => (item.id === edit ? product : item))
-        : [product, ...currentProducts],
-    );
-    setShow(false);
-    setEdit(null);
-    setForm(blank);
+      await saveProduct(product, edit ?? undefined);
+      setShow(false);
+      setEdit(null);
+      setForm(blank);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save product.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function startNewProduct() {
@@ -60,16 +72,81 @@ export default function Products() {
       stock: String(product.stock),
       color: product.color,
       image: product.image,
+      imagePublicId: product.imagePublicId || "",
     });
     setShow(true);
     window.scrollTo(0, 0);
   }
 
-  function deleteProduct(productId: number) {
-    if (confirm("Are you sure you want to delete this product?")) {
-      setProducts((currentProducts) =>
-        currentProducts.filter((product) => product.id !== productId),
+  async function uploadImage(file?: File) {
+    if (!file) return;
+    setError("");
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Choose a JPEG, PNG, or WebP image.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be 5 MB or smaller.");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const uploadData = new FormData();
+      uploadData.set("image", file);
+      const response = await fetch("/api/uploads/products", {
+        method: "POST",
+        body: uploadData,
+      });
+      const payload: unknown = await response.json();
+      if (
+        !response.ok ||
+        typeof payload !== "object" ||
+        payload === null ||
+        !("image" in payload) ||
+        typeof payload.image !== "string" ||
+        !("publicId" in payload) ||
+        typeof payload.publicId !== "string"
+      ) {
+        throw new Error(
+          typeof payload === "object" &&
+            payload !== null &&
+            "error" in payload &&
+            typeof payload.error === "string"
+            ? payload.error
+            : "Could not upload image.",
+        );
+      }
+
+      setForm((current) => ({
+        ...current,
+        image: payload.image as string,
+        imagePublicId: payload.publicId as string,
+      }));
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Could not upload image.",
       );
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function removeProduct(productId: number) {
+    if (confirm("Are you sure you want to delete this product?")) {
+      setError("");
+      try {
+        await deleteProduct(productId);
+      } catch (deleteError) {
+        setError(
+          deleteError instanceof Error
+            ? deleteError.message
+            : "Could not delete product.",
+        );
+      }
     }
   }
 
@@ -92,6 +169,7 @@ export default function Products() {
             {edit ? "Edit Product" : "New Product"}
           </h2>
           <form className="admin-form" onSubmit={save}>
+            {error && <p role="alert">{error}</p>}
             <input
               required
               placeholder="Product Name"
@@ -115,7 +193,7 @@ export default function Products() {
               type="number"
               min="0"
               step="0.01"
-              placeholder="Price (€)"
+              placeholder="Price (PKR)"
               value={form.price}
               onChange={(event) =>
                 setForm({ ...form, price: event.target.value })
@@ -138,19 +216,44 @@ export default function Products() {
                 setForm({ ...form, color: event.target.value })
               }
             />
-            <input
-              placeholder="Image URL"
-              value={form.image}
-              onChange={(event) =>
-                setForm({ ...form, image: event.target.value })
-              }
-            />
-            <button className="btn full">SAVE</button>
+            <label className="block">
+              <span className="mb-2 block">Product image</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={uploadingImage || saving}
+                onChange={(event) => {
+                  void uploadImage(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
+              <span className="mt-2 block text-sm text-gray-500">
+                JPEG, PNG or WebP · maximum 5 MB · uploaded to Cloudinary
+              </span>
+            </label>
+            {form.image && (
+              <div className="flex items-center gap-4">
+                <img
+                  src={form.image}
+                  alt="Selected product preview"
+                  className="h-28 w-28 rounded border object-contain"
+                />
+                <span>{uploadingImage ? "Uploading image..." : "Image ready"}</span>
+              </div>
+            )}
+            <button className="btn full" disabled={saving || uploadingImage}>
+              {uploadingImage
+                ? "UPLOADING IMAGE..."
+                : saving
+                  ? "SAVING..."
+                  : "SAVE"}
+            </button>
           </form>
         </div>
       )}
 
       <div className="admin-card">
+        {!show && error && <p role="alert">{error}</p>}
         <input
           className="field mb-5 w-full"
           placeholder="Search products..."
@@ -180,7 +283,7 @@ export default function Products() {
                 <td>{product.stock}</td>
                 <td>
                   <button onClick={() => startEditing(product)}>Edit</button> ·{" "}
-                  <button onClick={() => deleteProduct(product.id)}>
+                  <button onClick={() => removeProduct(product.id)}>
                     Delete
                   </button>
                 </td>

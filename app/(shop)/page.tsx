@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 
 import { ProductGrid } from "@/components/product";
 import { useStore } from "@/components/store";
+import { useAutoRefresh } from "@/lib/use-auto-refresh";
 
 const categories = [
   { name: "WOMEN", image: "/images/asset-06.webp", slug: "women" },
@@ -13,6 +15,67 @@ const categories = [
 
 export default function Home() {
   const { products } = useStore();
+  const [headline, setHeadline] = useState("Traditional Dresses.");
+  const [newArrivals, setNewArrivals] = useState(products.slice(8, 16));
+  const [arrivalError, setArrivalError] = useState("");
+
+  const loadHomeContent = useCallback(async () => {
+    try {
+      const [productsResponse, contentResponse] = await Promise.all([
+        fetch("/api/products?sort=newest&limit=8", { cache: "no-store" }),
+        fetch("/api/content", { cache: "no-store" }),
+      ]);
+      const payload: unknown = await productsResponse.json();
+      if (
+        !productsResponse.ok ||
+        typeof payload !== "object" ||
+        payload === null ||
+        !("products" in payload) ||
+        !Array.isArray(payload.products)
+      ) {
+        const message =
+          typeof payload === "object" &&
+          payload !== null &&
+          "error" in payload &&
+          typeof payload.error === "string"
+            ? payload.error
+            : "Could not load new arrivals.";
+        throw new Error(message);
+      }
+      setNewArrivals(payload.products);
+      setArrivalError("");
+
+      if (contentResponse.ok) {
+        const contentPayload: unknown = await contentResponse.json();
+        if (
+          typeof contentPayload === "object" &&
+          contentPayload !== null &&
+          "content" in contentPayload &&
+          typeof contentPayload.content === "object" &&
+          contentPayload.content !== null &&
+          "headline" in contentPayload.content &&
+          typeof contentPayload.content.headline === "string"
+        ) {
+          setHeadline(contentPayload.content.headline);
+        }
+      }
+    } catch (error: unknown) {
+      console.error("Could not refresh homepage data:", error);
+      setArrivalError(
+        error instanceof Error ? error.message : "Could not load new arrivals.",
+      );
+    }
+  }, []);
+
+  useAutoRefresh(loadHomeContent);
+
+  /*
+   * Load homepage-only content on first visit. Shared product data is loaded
+   * by StoreProvider.
+   */
+  useEffect(() => {
+    void loadHomeContent();
+  }, [loadHomeContent]);
 
   return (
     <>
@@ -23,7 +86,7 @@ export default function Home() {
         <div className="hero-content">
           <p className="hero-eyebrow">DIRNDL WEAR · NEW COLLECTION</p>
           <h1>
-            Traditional Dresses.
+            {headline}
             <br />
             Timeless Elegance.
           </h1>
@@ -88,7 +151,8 @@ export default function Home() {
       <section className="container section">
         <h2 className="section-title">New Arrivals</h2>
         <p className="subtitle">YOUR NEW FAVORITES</p>
-        <ProductGrid items={products.slice(8, 16)} />
+        {arrivalError && <p role="alert">{arrivalError}</p>}
+        <ProductGrid items={newArrivals} />
       </section>
 
       <section className="banner-small">

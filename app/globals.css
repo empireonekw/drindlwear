@@ -276,6 +276,24 @@ img {
   font-size: 10px;
   letter-spacing: 1px;
 }
+.stock-label {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #781d2d;
+  color: #fff;
+  padding: 7px 10px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.stock-note {
+  color: #786565;
+  font-size: 13px;
+}
+.stock-error {
+  color: #a32232;
+  font-size: 13px;
+}
 .wish {
   position: absolute;
   top: 10px;
@@ -299,6 +317,12 @@ img {
   letter-spacing: 1px;
   transform: translateY(100%);
   transition: .2s;
+}
+.quick-add:disabled {
+  cursor: not-allowed;
+  color: #fff;
+  background: #786565;
+  transform: translateY(0);
 }
 .product-card:hover .quick-add {
   transform: translateY(0);
@@ -635,6 +659,161 @@ img {
 .admin-table button {
   color: #781d2d;
 }
+.order-view-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #ead9d7;
+  border-radius: 6px;
+  padding: 8px 11px;
+  color: #781d2d;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background .2s, border-color .2s;
+}
+.order-view-button:hover {
+  background: #fbf3f1;
+  border-color: #c99e99;
+}
+.order-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #21131699;
+  backdrop-filter: blur(3px);
+}
+.order-dialog {
+  width: min(760px, 100%);
+  max-height: min(88vh, 900px);
+  overflow-y: auto;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 24px 80px #190b0e40;
+}
+.order-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 25px 30px 22px;
+  border-bottom: 1px solid #eee8e7;
+  background: #fcf8f6;
+}
+.order-dialog-eyebrow,.order-detail-label {
+  display: block;
+  color: #927d7b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+.order-dialog-header h2 {
+  margin: 7px 0 4px;
+  color: #35171e;
+  font: 28px Georgia,serif;
+}
+.order-dialog-header p {
+  color: #786f6e;
+  font-size: 13px;
+}
+.order-dialog-close {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #e8ddda;
+  border-radius: 50%;
+  color: #5b3035;
+  background: white;
+}
+.order-dialog-close:hover {
+  background: #f5eae8;
+}
+.order-dialog-content {
+  padding: 25px 30px 30px;
+}
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.order-detail-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  padding: 16px;
+  border: 1px solid #eee8e7;
+  border-radius: 8px;
+  color: #544849;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.order-detail-card strong {
+  color: #302326;
+  font-size: 14px;
+}
+.order-detail-label {
+  margin-bottom: 3px;
+}
+.order-detail-summary {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.order-detail-summary .order-detail-label {
+  margin: 0;
+}
+.order-items-heading {
+  margin: 25px 0 12px;
+  color: #35171e;
+  font: 20px Georgia,serif;
+}
+.order-items-list {
+  border-top: 1px solid #eee8e7;
+}
+.order-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 2px;
+  border-bottom: 1px solid #eee8e7;
+  font-size: 13px;
+}
+.order-item-row div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.order-item-row div span {
+  color: #817576;
+  font-size: 12px;
+}
+.order-item-row > strong {
+  white-space: nowrap;
+}
+.order-items-empty {
+  padding: 14px 0;
+  color: #817576;
+  font-size: 13px;
+}
+.order-total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 17px;
+  border-top: 1px solid #dfd3d1;
+  color: #35171e;
+  font-size: 16px;
+}
+.order-total-row strong {
+  font-size: 18px;
+}
 .admin-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -757,6 +936,29 @@ img {
   }
 }
 @media (max-width:520px) {
+  .order-dialog-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .order-dialog {
+    max-height: 92vh;
+    border-radius: 14px 14px 0 0;
+  }
+  .order-dialog-header {
+    padding: 21px 20px 17px;
+  }
+  .order-dialog-content {
+    padding: 20px;
+  }
+  .order-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .order-detail-summary {
+    grid-column: auto;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 10px 18px;
+  }
   .container {
     padding: 0 17px;
   }

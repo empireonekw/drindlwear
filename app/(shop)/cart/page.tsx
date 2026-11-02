@@ -17,6 +17,9 @@ export default function Cart() {
     (sum, item) => sum + item.qty * (item.product?.price || 0),
     0,
   );
+  const inventoryIssue = rows.some(
+    ({ qty, product }) => !product || product.stock < qty,
+  );
 
   return (
     <div className="container">
@@ -39,10 +42,30 @@ export default function Cart() {
                     <strong>{product!.name}</strong>
                   </Link>
                   <p className="muted">{product!.color}</p>
+                  {product!.stock <= 0 ? (
+                    <p className="stock-error" role="alert">Out of stock</p>
+                  ) : qty > product!.stock ? (
+                    <p className="stock-error" role="alert">
+                      Only {product!.stock} left. Reduce quantity to continue.
+                    </p>
+                  ) : product!.stock <= 5 ? (
+                    <p className="stock-note">Only {product!.stock} left</p>
+                  ) : null}
                   <div className="qty">
-                    <button onClick={() => quantity(id, qty - 1)}>−</button>
+                    <button
+                      aria-label={`Decrease ${product!.name} quantity`}
+                      onClick={() => quantity(id, qty - 1)}
+                    >
+                      −
+                    </button>
                     {qty}
-                    <button onClick={() => quantity(id, qty + 1)}>+</button>
+                    <button
+                      aria-label={`Increase ${product!.name} quantity`}
+                      disabled={qty >= product!.stock}
+                      onClick={() => quantity(id, qty + 1)}
+                    >
+                      +
+                    </button>
                   </div>
                   <button
                     className="text-xs underline mt-3"
@@ -70,9 +93,15 @@ export default function Cart() {
               <strong>Total</strong>
               <strong>{money(total)}</strong>
             </div>
-            <Link className="btn" href="/checkout">
-              PROCEED TO CHECKOUT
-            </Link>
+            {inventoryIssue ? (
+              <button className="btn" disabled>
+                UPDATE CART STOCK TO CHECKOUT
+              </button>
+            ) : (
+              <Link className="btn" href="/checkout">
+                PROCEED TO CHECKOUT
+              </Link>
+            )}
           </aside>
         </div>
       )}

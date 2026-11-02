@@ -5,6 +5,7 @@ export type Product = {
   price: number;
   oldPrice?: number;
   image: string;
+  imagePublicId?: string;
   color: string;
   stock: number;
   description: string;
@@ -75,34 +76,3 @@ export const money = (amount: number) =>
     style: "currency",
     currency: "PKR",
   }).format(amount);
-
-export const initialOrders = [
-  {
-    id: "KD-1028",
-    customer: "Anna Müller",
-    date: "2026-10-24",
-    total: 179.9,
-    status: "New",
-  },
-  {
-    id: "KD-1027",
-    customer: "Sophie Weber",
-    date: "2026-10-23",
-    total: 229.8,
-    status: "Shipped",
-  },
-  {
-    id: "KD-1026",
-    customer: "Lena Fischer",
-    date: "2026-10-22",
-    total: 149.9,
-    status: "Processing",
-  },
-  {
-    id: "KD-1025",
-    customer: "Emma Schmidt",
-    date: "2026-10-21",
-    total: 99.9,
-    status: "Delivered",
-  },
-];
