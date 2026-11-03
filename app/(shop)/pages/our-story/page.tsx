@@ -17,14 +17,14 @@ const brandValues = [
 
 export default function Story() {
   return (
-    <main className="container">
-      <section className="brand-story">
+    <main className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px] motion-safe:[&>*]:animate-page-enter motion-safe:[&>:nth-child(2)]:[animation-delay:70ms] motion-safe:[&>:nth-child(3)]:[animation-delay:120ms]">
+      <section className="brand-story [display:grid] [grid-template-columns:1fr_1fr] [gap:45px] [align-items:center] [padding:75px_0] [&_img]:[max-width:360px] [&_img]:[width:100%] [&_img]:[margin:auto] [&_h1]:[font:normal_52px_Georgia,serif] [&_h1]:[color:#781d2d] [&_p]:[line-height:1.9] [&_p]:[color:#786565] max-[850px]:[grid-template-columns:1fr]">
         <img
           src="/brand/dirndl-wear-logo1.png"
           alt="Dirndl Wear full brand logo"
         />
         <div>
-          <p className="subtitle" style={{ textAlign: "left" }}>
+          <p className="subtitle [text-align:center] [color:#777] [font-size:13px] [letter-spacing:1px] [margin-bottom:38px]" style={{ textAlign: "left" }}>
             OUR STORY
           </p>
           <h1>Traditional Dresses. Timeless Elegance.</h1>
@@ -45,21 +45,21 @@ export default function Story() {
             invite discovery, thoughtful styling, and a deeper appreciation of
             the craft behind the clothes.
           </p>
-          <Link className="btn" href="/collections/all">
+          <Link className="btn [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#9b3345] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]" href="/collections/all">
             Explore the Collection
           </Link>
         </div>
       </section>
 
-      <div className="brand-values">
+      <div className="brand-values [display:grid] [grid-template-columns:repeat(3,1fr)] [gap:20px] [padding-bottom:80px] max-[850px]:[grid-template-columns:1fr]">
         {brandValues.map((value) => (
-          <article className="brand-value" key={value.title}>
+          <article className="brand-value [padding:28px] [background:white] [border:1px_solid_#ead9d5] [&_h3]:[font:25px_Georgia,serif] [&_h3]:[color:#781d2d]" key={value.title}>
             <h3>{value.title}</h3>
             <p>{value.text}</p>
           </article>
         ))}
       </div>
-      <section className="brand-story-details">
+      <section className="brand-story-details [max-width:860px] [margin:0_auto] [padding:0_0_75px] [&_h2]:[margin:34px_0_10px] [&_h2]:[color:#781d2d] [&_h2]:[font:normal_30px_Georgia,serif] [&_p]:[color:#786565] [&_p]:[line-height:1.9]">
         <h2>Tradition with room for personal style</h2>
         <p>
           There is no single way to wear a Dirndl. Colour, fabric, blouse, and

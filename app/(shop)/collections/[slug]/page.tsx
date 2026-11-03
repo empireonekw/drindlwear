@@ -66,14 +66,14 @@ export default function Collection() {
   }, [products, title, sort, filter]);
 
   return (
-    <div className="container">
-      <div className="breadcrumb">Home / Collections / {title}</div>
-      <h1 className="page-heading">
+    <div className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]">
+      <div className="breadcrumb [font-size:11px] [color:#888] [padding:24px_0]">Home / Collections / {title}</div>
+      <h1 className="page-heading [text-align:center] [font:42px_Georgia,serif] [margin:35px_0_14px] [color:#781d2d]">
         {title.charAt(0).toUpperCase() + title.slice(1)}
       </h1>
-      <p className="subtitle">FIND YOUR NEXT FAVORITE LOOK</p>
+      <p className="subtitle [text-align:center] [color:#777] [font-size:13px] [letter-spacing:1px] [margin-bottom:38px]">FIND YOUR NEXT FAVORITE LOOK</p>
 
-      <div className="filter-chips">
+      <div className="filter-chips [display:flex] [gap:10px] [flex-wrap:wrap] [&_button]:[border:1px_solid_#ddd] [&_button]:[padding:9px_13px] [&_button]:[font-size:12px] [&_.active]:[background:#781d2d] [&_.active]:[color:white]">
         {["All", ...categories].map((category) => (
           <button
             className={filter === category ? "active" : ""}
@@ -85,7 +85,7 @@ export default function Collection() {
         ))}
       </div>
 
-      <div className="toolbar">
+      <div className="toolbar [display:flex] [justify-content:space-between] [align-items:center] [border-top:1px_solid_#eee] [border-bottom:1px_solid_#eee] [padding:16px_0] [margin:35px_0] [&_select]:[padding:12px] [&_select]:[border:1px_solid_#ddd] [&_select]:[background:white] max-[520px]:[flex-wrap:wrap] max-[520px]:[gap:12px]">
         <span>{filtered.length} Products</span>
         <select value={sort} onChange={(event) => setSort(event.target.value)}>
           <option value="featured">Featured</option>
@@ -98,7 +98,7 @@ export default function Collection() {
       {filtered.length ? (
         <ProductGrid items={filtered} />
       ) : (
-        <div className="empty">No products found.</div>
+        <div className="empty [text-align:center] [padding:100px_0] [color:#777]">No products found.</div>
       )}
       <div className="h-20" />
     </div>

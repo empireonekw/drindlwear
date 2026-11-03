@@ -317,18 +317,18 @@ export default function InfoPageRoute({
   if (!page) notFound();
 
   return (
-    <div className="container info-page">
-      <p className="info-eyebrow">DIRNDL WEAR · INFORMATION</p>
-      <h1 className="page-heading">{page.title}</h1>
-      <p className="info-intro">{page.intro}</p>
+    <div className="container info-page [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px] [max-width:920px] [padding-top:54px] [padding-bottom:90px] [&_.page-heading]:[margin-top:14px] [&_.page-heading]:[margin-bottom:18px] max-[850px]:[padding-top:38px] max-[850px]:[padding-bottom:55px]">
+      <p className="info-eyebrow [margin:0] [color:#786565] [text-align:center] [font-size:11px] [letter-spacing:2px]">DIRNDL WEAR · INFORMATION</p>
+      <h1 className="page-heading [text-align:center] [font:42px_Georgia,serif] [margin:35px_0_14px] [color:#781d2d]">{page.title}</h1>
+      <p className="info-intro [max-width:700px] [margin:0_auto_30px] [color:#786565] [text-align:center] [font:19px/1.8_Georgia,serif]">{page.intro}</p>
       {page.notice && (
-        <aside className="info-notice" role="note">
+        <aside className="info-notice [margin:0_auto_34px] [padding:18px_22px] [border-left:3px_solid_#781d2d] [background:#fff] [color:#5e4d4d] [font-size:14px] [line-height:1.8]" role="note">
           {page.notice}
         </aside>
       )}
-      <div className="info-sections">
+      <div className="info-sections [display:grid] [gap:18px]">
         {page.sections.map((section) => (
-          <section className="info-section" key={section.heading}>
+          <section className="info-section [padding:24px_28px] [background:#fff] [border:1px_solid_#ead9d5] [&_h2]:[margin:0_0_12px] [&_h2]:[color:#781d2d] [&_h2]:[font:normal_25px_Georgia,serif] [&_p]:[color:#5f5553] [&_p]:[font-size:14px] [&_p]:[line-height:1.85] [&_li]:[color:#5f5553] [&_li]:[font-size:14px] [&_li]:[line-height:1.85] [&_p]:[margin:10px_0_0] [&_ul]:[margin:12px_0_0] [&_ul]:[padding-left:22px] [&_li_+_li]:[margin-top:7px] max-[850px]:[padding:21px]" key={section.heading}>
             <h2>{section.heading}</h2>
             {section.paragraphs?.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>

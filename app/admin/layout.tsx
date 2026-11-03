@@ -1,6 +1,5 @@
 "use client";
 
-import "./admin-layout.css";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -123,21 +122,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
   if (access === "error") {
     return (
-      <div className="container py-12" role="alert">
+      <div className="container py-12 [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]" role="alert">
         Admin access could not be verified: {accessError}
       </div>
     );
   }
 
   return (
-    <div className="admin-shell">
-      <aside className={menuOpen ? "admin-sidebar menu-open" : "admin-sidebar"}>
-        <Link href="/" className="admin-brand">
+    <div className="admin-shell [display:grid] [grid-template-columns:minmax(0,_245px)_minmax(0,_1fr)] [min-height:100vh] [background:#f7f8fa] max-[850px]:[grid-template-columns:minmax(0,_1fr)] [align-items:start]">
+      <aside className={menuOpen ? "admin-sidebar menu-open [background:#4a1420] [color:white] [padding:30px_18px] [&_h2]:[font:25px_Georgia,serif] [&_h2]:[margin:0_0_40px] [&_a]:[display:flex] [&_a]:[align-items:center] [&_a]:[gap:12px] [&_a]:[padding:14px] [&_a]:[border-radius:5px] [&_a]:[color:#ddd] [&_a]:[font-size:13px] [&_a:hover]:[background:#ffffff20] max-[850px]:[display:flex] max-[850px]:[overflow-x:auto] max-[850px]:[gap:12px] max-[850px]:[padding:10px_16px] max-[850px]:[&_h2]:[display:none] max-[850px]:[&_a]:[white-space:nowrap] [&_h2]:[font-size:20px] motion-safe:[&_a]:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&_a:hover]:[transform:translateX(3px)] [position:sticky] [top:0] [height:100vh] [overflow-y:auto] [scrollbar-width:none] [min-width:0] [&::-webkit-scrollbar]:[display:none] max-[850px]:[position:static] max-[850px]:[height:auto] max-[850px]:[overflow:visible] max-[850px]:[align-items:center] max-[850px]:[justify-content:space-between]" : "admin-sidebar [background:#4a1420] [color:white] [padding:30px_18px] [&_h2]:[font:25px_Georgia,serif] [&_h2]:[margin:0_0_40px] [&_a]:[display:flex] [&_a]:[align-items:center] [&_a]:[gap:12px] [&_a]:[padding:14px] [&_a]:[border-radius:5px] [&_a]:[color:#ddd] [&_a]:[font-size:13px] [&_a:hover]:[background:#ffffff20] max-[850px]:[display:flex] max-[850px]:[overflow-x:auto] max-[850px]:[gap:12px] max-[850px]:[padding:10px_16px] max-[850px]:[&_h2]:[display:none] max-[850px]:[&_a]:[white-space:nowrap] [&_h2]:[font-size:20px] motion-safe:[&_a]:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&_a:hover]:[transform:translateX(3px)] [position:sticky] [top:0] [height:100vh] [overflow-y:auto] [scrollbar-width:none] [min-width:0] [&::-webkit-scrollbar]:[display:none] max-[850px]:[position:static] max-[850px]:[height:auto] max-[850px]:[overflow:visible] max-[850px]:[align-items:center] max-[850px]:[justify-content:space-between]"}>
+        <Link href="/" className="admin-brand [display:flex] [align-items:center] [justify-content:center] [margin:0_auto_12px] [padding:8px] [background:#fffaf8] [border-radius:4px] [&_img]:[width:100%] [&_img]:[max-width:180px] [&_img]:[height:92px] [&_img]:[object-fit:contain] max-[850px]:[width:max-content] max-[850px]:[max-width:100%] max-[850px]:[margin:0] max-[850px]:[padding:3px_8px] max-[850px]:[border-radius:4px] max-[850px]:[&_img]:[width:112px] max-[850px]:[&_img]:[height:48px]">
           <img src="/brand/dirndl-wear-logo1.png" alt="Dirndl Wear" />
         </Link>
-        <div className="admin-sidebar-label">ADMIN</div>
+        <div className="admin-sidebar-label [margin:0_0_22px] [color:#d8c5c6] [font-size:10px] [letter-spacing:2px] [text-align:center] max-[850px]:[margin:0_0_0_auto]">ADMIN</div>
         <button
-          className="admin-menu-toggle"
+          className="admin-menu-toggle [display:none] max-[850px]:[display:flex] max-[850px]:[width:42px] max-[850px]:[height:42px] max-[850px]:[flex:0_0_42px] max-[850px]:[align-items:center] max-[850px]:[justify-content:center] max-[850px]:[border:1px_solid_rgb(255_255_255_/_22%)] max-[850px]:[border-radius:50%] max-[850px]:[color:#fff] max-[850px]:[&:not(:disabled):hover]:[transform:none]"
           type="button"
           aria-label={menuOpen ? "Close admin menu" : "Open admin menu"}
           aria-expanded={menuOpen}
@@ -146,8 +145,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
-        <nav id="admin-navigation" className={menuOpen ? "admin-nav open" : "admin-nav"} aria-label="Admin navigation">
-          <div className="admin-nav-header">
+        <nav id="admin-navigation" className={menuOpen ? "admin-nav open [display:contents] max-[850px]:[position:fixed] max-[850px]:[z-index:1001] max-[850px]:[top:0] max-[850px]:[bottom:0] max-[850px]:[left:0] max-[850px]:[display:flex] max-[850px]:[width:min(90vw,_360px)] max-[850px]:[height:100dvh] max-[850px]:[flex-direction:column] max-[850px]:[gap:4px] max-[850px]:[padding:0_16px_max(16px,_env(safe-area-inset-bottom))] max-[850px]:[overflow-y:auto] max-[850px]:[overscroll-behavior:contain] max-[850px]:[background:#fffaf8] max-[850px]:[box-shadow:12px_0_36px_rgb(33_28_29_/_12%)] max-[850px]:[transform:translateX(-105%)] max-[850px]:[transition:transform_260ms_cubic-bezier(0.22,_1,_0.36,_1)] max-[850px]:[visibility:hidden] max-[850px]:[pointer-events:none] max-[850px]:[&.open]:[transform:translateX(0)] max-[850px]:[&.open]:[visibility:visible] max-[850px]:[&.open]:[pointer-events:auto] max-[850px]:[&_a]:[display:flex] max-[850px]:[&_a]:[min-height:54px] max-[850px]:[&_a]:[flex:0_0_auto] max-[850px]:[&_a]:[align-items:center] max-[850px]:[&_a]:[gap:12px] max-[850px]:[&_a]:[padding:12px_14px] max-[850px]:[&_a]:[border:1px_solid_transparent] max-[850px]:[&_a]:[border-radius:6px] max-[850px]:[&_a]:[color:#443a3a] max-[850px]:[&_a]:[font-size:14px] max-[850px]:[&_a]:[white-space:nowrap] max-[850px]:[&_a[aria-current='page']]:[border-color:#ead9d5] max-[850px]:[&_a[aria-current='page']]:[background:#f5ebe8] max-[850px]:[&_a[aria-current='page']]:[color:#781d2d] max-[850px]:[&_a_svg]:[flex:0_0_auto]" : "admin-nav [display:contents] max-[850px]:[position:fixed] max-[850px]:[z-index:1001] max-[850px]:[top:0] max-[850px]:[bottom:0] max-[850px]:[left:0] max-[850px]:[display:flex] max-[850px]:[width:min(90vw,_360px)] max-[850px]:[height:100dvh] max-[850px]:[flex-direction:column] max-[850px]:[gap:4px] max-[850px]:[padding:0_16px_max(16px,_env(safe-area-inset-bottom))] max-[850px]:[overflow-y:auto] max-[850px]:[overscroll-behavior:contain] max-[850px]:[background:#fffaf8] max-[850px]:[box-shadow:12px_0_36px_rgb(33_28_29_/_12%)] max-[850px]:[transform:translateX(-105%)] max-[850px]:[transition:transform_260ms_cubic-bezier(0.22,_1,_0.36,_1)] max-[850px]:[visibility:hidden] max-[850px]:[pointer-events:none] max-[850px]:[&.open]:[transform:translateX(0)] max-[850px]:[&.open]:[visibility:visible] max-[850px]:[&.open]:[pointer-events:auto] max-[850px]:[&_a]:[display:flex] max-[850px]:[&_a]:[min-height:54px] max-[850px]:[&_a]:[flex:0_0_auto] max-[850px]:[&_a]:[align-items:center] max-[850px]:[&_a]:[gap:12px] max-[850px]:[&_a]:[padding:12px_14px] max-[850px]:[&_a]:[border:1px_solid_transparent] max-[850px]:[&_a]:[border-radius:6px] max-[850px]:[&_a]:[color:#443a3a] max-[850px]:[&_a]:[font-size:14px] max-[850px]:[&_a]:[white-space:nowrap] max-[850px]:[&_a[aria-current='page']]:[border-color:#ead9d5] max-[850px]:[&_a[aria-current='page']]:[background:#f5ebe8] max-[850px]:[&_a[aria-current='page']]:[color:#781d2d] max-[850px]:[&_a_svg]:[flex:0_0_auto]"} aria-label="Admin navigation">
+          <div className="admin-nav-header [display:none] max-[850px]:[&_button:not(:disabled):hover]:[transform:none] max-[850px]:[position:sticky] max-[850px]:[top:0] max-[850px]:[z-index:1] max-[850px]:[display:flex] max-[850px]:[min-height:76px] max-[850px]:[align-items:center] max-[850px]:[justify-content:space-between] max-[850px]:[margin:0_-16px_8px] max-[850px]:[padding:0_24px] max-[850px]:[border-bottom:1px_solid_#eee8e5] max-[850px]:[background:#fffaf8] max-[850px]:[color:#781d2d] max-[850px]:[font-size:11px] max-[850px]:[font-weight:600] max-[850px]:[letter-spacing:2px] max-[850px]:[&_button]:[display:flex] max-[850px]:[&_button]:[width:40px] max-[850px]:[&_button]:[height:40px] max-[850px]:[&_button]:[align-items:center] max-[850px]:[&_button]:[justify-content:center] max-[850px]:[&_button]:[color:#302729]">
             <span>ADMIN MENU</span>
             <button type="button" aria-label="Close admin menu" onClick={() => setMenuOpen(false)}>
               <X size={22} />
@@ -167,10 +166,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </nav>
-        {menuOpen && <button className="admin-nav-backdrop" type="button" aria-label="Close admin menu" onClick={() => setMenuOpen(false)} />}
+        {menuOpen && <button className="admin-nav-backdrop [display:none] max-[850px]:[position:fixed] max-[850px]:[z-index:1000] max-[850px]:[inset:0] max-[850px]:[display:block] max-[850px]:[width:100%] max-[850px]:[height:100%] max-[850px]:[background:rgb(25_20_21_/_54%)]" type="button" aria-label="Close admin menu" onClick={() => setMenuOpen(false)} />}
       </aside>
-      <main className="admin-main">
-        <div className="notice">
+      <main className="admin-main [padding:35px] [min-width:0] max-[520px]:[padding:18px] motion-safe:[&>*]:animate-page-enter motion-safe:[&>:nth-child(2)]:[animation-delay:70ms] motion-safe:[&>:nth-child(3)]:[animation-delay:120ms]">
+        <div className="notice [background:#fff7e5] [border:1px_solid_#f1dfb6] [padding:13px_18px] [font-size:12px] [margin-bottom:20px]">
           Admin session is active.
           <button type="button" className="ml-3 underline" onClick={signOut}>
             Sign out
