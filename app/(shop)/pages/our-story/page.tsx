@@ -33,6 +33,18 @@ export default function Story() {
             contemporary fashion identity. We bring together heritage,
             thoughtful craftsmanship, and timeless styling.
           </p>
+          <p>
+            A Dirndl brings together distinctive pieces—a fitted bodice, a full
+            skirt, an apron, and a blouse—in a silhouette shaped by generations
+            of regional dress. We admire the care and character behind those
+            details, and the many ways people make the look their own today.
+          </p>
+          <p>
+            Our purpose is to make traditional style feel approachable without
+            losing sight of its roots. We want every collection and story to
+            invite discovery, thoughtful styling, and a deeper appreciation of
+            the craft behind the clothes.
+          </p>
           <Link className="btn" href="/collections/all">
             Explore the Collection
           </Link>
@@ -47,6 +59,22 @@ export default function Story() {
           </article>
         ))}
       </div>
+      <section className="brand-story-details">
+        <h2>Tradition with room for personal style</h2>
+        <p>
+          There is no single way to wear a Dirndl. Colour, fabric, blouse, and
+          accessories can give each outfit a different character. We celebrate
+          that individuality while approaching Bavarian and Alpine traditions
+          with respect and curiosity.
+        </p>
+        <h2>Made to be remembered</h2>
+        <p>
+          Whether dressing for a celebration or simply exploring a style you
+          love, the pieces we choose should feel considered and meaningful.
+          Dirndl Wear is here to share inspiration, explain the details, and
+          help make every look your own.
+        </p>
+      </section>
     </main>
   );
 }

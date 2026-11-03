@@ -254,7 +254,7 @@ export function Footer() {
             (item) => (
               <Link
                 key={item}
-                href={`/pages/${encodeURIComponent(item.toLowerCase())}`}
+                href={`/pages/${item.toLowerCase().replaceAll(" ", "-")}`}
               >
                 {item}
               </Link>
@@ -272,7 +272,7 @@ export function Footer() {
           ].map((item) => (
             <Link
               key={item}
-              href={`/pages/${encodeURIComponent(item.toLowerCase())}`}
+              href={`/pages/${item.toLowerCase().replaceAll(" ", "-")}`}
             >
               {item}
             </Link>
