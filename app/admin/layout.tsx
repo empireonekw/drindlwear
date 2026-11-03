@@ -65,8 +65,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           return;
         }
 
-        await refreshOrders();
         if (active) setAccess("allowed");
+        void refreshOrders().catch((error: unknown) => {
+          console.error("Could not preload admin orders:", error);
+        });
       } catch (error) {
         if (active) {
           setAccessError(
@@ -117,7 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (access === "checking" || access === "denied") {
-    return <div className="container py-12">Checking admin access...</div>;
+    return null;
   }
   if (access === "error") {
     return (

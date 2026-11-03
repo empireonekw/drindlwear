@@ -26,7 +26,6 @@ export default function Account() {
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState<AccountUser | null>(null);
   const [orders, setOrders] = useState<AccountOrder[]>([]);
-  const [loadingAccount, setLoadingAccount] = useState(true);
 
   const loadAccount = useCallback(async () => {
     const userResponse = await fetch("/api/auth/me", { cache: "no-store" });
@@ -85,9 +84,6 @@ export default function Account() {
               : "Could not load your account.",
           );
         }
-      })
-      .finally(() => {
-        if (active) setLoadingAccount(false);
       });
     return () => {
       active = false;
@@ -174,9 +170,7 @@ export default function Account() {
   return (
     <div className="container">
       <h1 className="page-heading">My Account</h1>
-      {loadingAccount ? (
-        <p>Loading your account...</p>
-      ) : user ? (
+      {user ? (
         <section>
           <div className="admin-head">
             <div>
