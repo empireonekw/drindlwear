@@ -4,75 +4,191 @@ import Link from "next/link";
 import { Heart, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 
-import { money, Product } from "@/lib/data";
+import {
+  availableStock,
+  colorSwatches,
+  money,
+  Product,
+  productSizes,
+  requiresSize,
+} from "@/lib/data";
 import { useStore } from "./store";
 
 export function ProductCard({ p }: { p: Product }) {
   const { add, toggleWish, wishlist } = useStore();
-  const outOfStock = p.stock <= 0;
-  const [stockMessage, setStockMessage] = useState("");
+  const [feedback, setFeedback] = useState<{ text: string; ok: boolean } | null>(null);
 
-  function addToCart() {
-    if (!add(p.id)) {
-      setStockMessage("No more stock available.");
+  const outOfStock = p.stock <= 0;
+  const needsSize = requiresSize(p.category);
+  const wished = wishlist.includes(p.id);
+  const hoverImage = p.images?.[0];
+  const discount = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+  const sizesLeft = needsSize && p.sizeStock
+    ? productSizes.filter((size) => availableStock(p, size) > 0)
+    : [];
+  const badge = outOfStock
+    ? { text: "Sold out", className: "bg-[#211c1d] text-white" }
+    : discount > 0
+      ? { text: `−${discount}%`, className: "bg-[#a32232] text-white" }
+      : p.stock <= 3
+        ? { text: `Only ${p.stock} left`, className: "bg-white text-[#781d2d]" }
+        : null;
+
+  function quickAdd(size?: string) {
+    if (!add(p.id, 1, size)) {
+      setFeedback({
+        text: size ? `No more stock in size ${size}` : "No more stock available",
+        ok: false,
+      });
       return;
     }
-    setStockMessage("");
+    setFeedback({ text: size ? `Added size ${size} to cart` : "Added to cart", ok: true });
   }
 
   return (
-    <article className="product-card [&:hover_.quick-add]:[transform:translateY(0)] [background:#fff] motion-safe:[&:hover_.product-photo_img]:[transform:scale(1.045)] motion-safe:[transition:transform_240ms_ease,_box-shadow_240ms_ease] motion-safe:[&:hover]:[transform:translateY(-3px)] motion-safe:[&:hover]:[box-shadow:0_12px_28px_rgb(33_28_29_/_8%)]">
-      <div className="product-photo [position:relative] [overflow:hidden] [background:#f3f0ec] [aspect-ratio:4/5] [&_a]:[position:absolute] [&_a]:[inset:0] [&_a]:[display:block] [&_img]:[width:100%] [&_img]:[height:100%] [&_img]:[object-fit:cover] motion-safe:[&_img]:[transition:transform_650ms_cubic-bezier(0.2,_0.7,_0.2,_1)]">
-        <Link href={`/product/${p.id}`}>
-          <img className="block" src={p.image} alt={p.name} />
-        </Link>
-        {p.oldPrice && <span className="sale-label [position:absolute] [top:12px] [left:12px] [background:#fff] [padding:7px_12px] [font-size:10px] [letter-spacing:1px]">SALE</span>}
-        {outOfStock && <span className="stock-label [position:absolute] [top:12px] [right:12px] [background:#781d2d] [color:#fff] [padding:7px_10px] [font-size:10px] [letter-spacing:1px]">OUT OF STOCK</span>}
-        {!outOfStock && p.stock <= 5 && (
-          <span className="stock-label [position:absolute] [top:12px] [right:12px] [background:#781d2d] [color:#fff] [padding:7px_10px] [font-size:10px] [letter-spacing:1px]">ONLY {p.stock} LEFT</span>
-        )}
-        <button
-          aria-label="Wishlist"
-          className="wish [position:absolute] [top:10px] [right:10px] [background:white] [border-radius:50%] [padding:10px]"
-          onClick={() => toggleWish(p.id)}
-        >
-          <Heart
-            size={19}
-            fill={wishlist.includes(p.id) ? "#a97870" : "none"}
+    <article className="group relative bg-white motion-safe:transition motion-safe:duration-200 motion-safe:hover:-translate-y-[3px] motion-safe:hover:shadow-[0_12px_28px_rgb(33_28_29/8%)]">
+      <div className="relative aspect-[4/5] overflow-hidden bg-[#f3f0ec]">
+        <Link href={`/product/${p.id}`} className="absolute inset-0 block">
+          <img
+            src={p.image}
+            alt={p.name}
+            className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.04]"
           />
-        </button>
-        <button
-          className="quick-add [position:absolute] [bottom:0] [left:0] [right:0] [display:flex] [align-items:center] [justify-content:center] [gap:10px] [padding:15px] [background:#fffe] [font-size:10px] [letter-spacing:1px] [transform:translateY(100%)] [transition:.2s] [&:disabled]:[cursor:not-allowed] [&:disabled]:[color:#fff] [&:disabled]:[background:#786565] [&:disabled]:[transform:translateY(0)] max-[520px]:[transform:none] max-[520px]:[font-size:8px]"
-          disabled={outOfStock}
-          onClick={addToCart}
-        >
-          <ShoppingBag size={16} />{" "}
-          {outOfStock ? "OUT OF STOCK" : "ADD TO CART"}
-        </button>
-      </div>
-      <div className="product-meta [padding:12px] [display:flex] [flex-direction:column] [gap:6px] [font-size:13px] [&_del]:[color:#999] [&_del]:[margin-left:10px] max-[520px]:[font-size:11px]">
-        <Link href={`/product/${p.id}`}>{p.name}</Link>
-        <span className="muted [color:#999]">{p.color}</span>
-        <span className={outOfStock ? "stock-error [color:#a32232] [font-size:13px]" : "stock-note [color:#786565] [font-size:13px]"}>
-          {outOfStock ? "Out of stock" : `${p.stock} in stock`}
-        </span>
-        {stockMessage && (
-          <span className="stock-error [color:#a32232] [font-size:13px]" role="status">
-            {stockMessage}
+          {hoverImage && (
+            // Second photo fades in on hover (mouse devices only).
+            <img
+              src={hoverImage}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 [@media(hover:hover)]:group-hover:opacity-100"
+            />
+          )}
+        </Link>
+
+        {badge && (
+          <span className={`absolute left-3 top-3 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[1px] ${badge.className}`}>
+            {badge.text}
           </span>
         )}
-        <div>
-          <strong>{money(p.price)}</strong>{" "}
-          {p.oldPrice && <del>{money(p.oldPrice)}</del>}
+
+        <button
+          type="button"
+          aria-label={wished ? `Remove ${p.name} from wishlist` : `Save ${p.name} to wishlist`}
+          aria-pressed={wished}
+          onClick={() => toggleWish(p.id)}
+          className="absolute right-2.5 top-2.5 grid h-10 w-10 place-items-center rounded-full bg-white text-[#781d2d] shadow-sm"
+        >
+          <Heart size={18} fill={wished ? "currentColor" : "none"} aria-hidden="true" />
+        </button>
+
+        {!outOfStock && (
+          <>
+            {/* Mouse devices: quick add slides up on hover or keyboard focus */}
+            <div className="absolute inset-x-0 bottom-0 translate-y-full bg-white/95 p-3 transition-transform duration-200 group-focus-within:translate-y-0 group-hover:translate-y-0 [@media(hover:none)]:hidden">
+              {needsSize ? (
+                <>
+                  <p className="m-0 mb-2 text-[10px] uppercase tracking-[1.4px] text-[#786565]">Quick add · size</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sizesLeft.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        aria-label={`Add ${p.name} in size ${size} to cart`}
+                        onClick={() => quickAdd(size)}
+                        className="h-9 min-w-10 border border-[#cfc3bf] bg-white px-2 text-[13px] hover:border-[#781d2d] hover:bg-[#781d2d] hover:text-white"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => quickAdd()}
+                  className="flex h-10 w-full items-center justify-center gap-2 bg-[#781d2d] text-[11px] uppercase tracking-[1.4px] text-white hover:bg-[#9b3345]"
+                >
+                  <ShoppingBag size={15} aria-hidden="true" /> Add to cart
+                </button>
+              )}
+            </div>
+
+            {/* Touch devices: no hover, so a simple bar */}
+            <div className="absolute inset-x-0 bottom-0 hidden [@media(hover:none)]:block">
+              {needsSize ? (
+                <Link
+                  href={`/product/${p.id}`}
+                  className="flex h-10 items-center justify-center gap-2 bg-white/95 text-[10px] uppercase tracking-[1.2px]"
+                >
+                  <ShoppingBag size={14} aria-hidden="true" /> Choose size
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => quickAdd()}
+                  className="flex h-10 w-full items-center justify-center gap-2 bg-white/95 text-[10px] uppercase tracking-[1.2px]"
+                >
+                  <ShoppingBag size={14} aria-hidden="true" /> Add to cart
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5 p-3 text-[13px] max-[520px]:p-2.5 max-[520px]:text-[12px]">
+        <Link href={`/product/${p.id}`} className="font-medium leading-snug hover:text-[#781d2d]">
+          {p.name}
+        </Link>
+        <span className="flex items-center gap-1.5 text-[#786565]">
+          {p.colorFamily && (
+            <span
+              aria-hidden="true"
+              className="h-3 w-3 shrink-0 rounded-full border border-[#d8c9c4]"
+              style={{ background: colorSwatches[p.colorFamily] }}
+            />
+          )}
+          {p.color}
+        </span>
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <strong className={discount ? "text-[#a32232]" : ""}>{money(p.price)}</strong>
+          {p.oldPrice && <del className="text-[#999]">{money(p.oldPrice)}</del>}
         </div>
+        {outOfStock ? (
+          <span className="text-[12px] text-[#a32232]">Sold out</span>
+        ) : (
+          sizesLeft.length > 0 && (
+            <span className="text-[12px] text-[#8a7c7c]">
+              <span className="sr-only">Sizes available: </span>
+              {sizesLeft.join(" · ")}
+            </span>
+          )
+        )}
+        {feedback && (
+          <span role="status" className={`text-[12px] ${feedback.ok ? "text-[#1f6b44]" : "text-[#a32232]"}`}>
+            {feedback.text}
+            {feedback.ok && (
+              <>
+                {" · "}
+                <Link href="/cart" className="underline underline-offset-2">View cart</Link>
+              </>
+            )}
+          </span>
+        )}
       </div>
     </article>
   );
 }
 
-export function ProductGrid({ items }: { items: Product[] }) {
+export function ProductGrid({ items, columns = 4 }: { items: Product[]; columns?: 3 | 4 }) {
   return (
-    <div className="product-grid [display:grid] [grid-template-columns:repeat(4,minmax(0,1fr))] [gap:25px_18px] max-[850px]:[grid-template-columns:repeat(2,1fr)] max-[520px]:[gap:10px] motion-safe:[&_>_:nth-child(-n_+_8)]:[animation:page-enter_520ms_cubic-bezier(0.2,_0.7,_0.2,_1)_both] motion-safe:[&_>_:nth-child(2)]:[animation-delay:60ms] motion-safe:[&_>_:nth-child(3)]:[animation-delay:120ms] motion-safe:[&_>_:nth-child(4)]:[animation-delay:180ms] motion-safe:[&_>_:nth-child(n_+_5)]:[animation-delay:220ms]">
+    <div
+      className={
+        "product-grid grid gap-x-[18px] gap-y-[25px] max-[850px]:grid-cols-2 max-[520px]:gap-2.5 " +
+        (columns === 3 ? "grid-cols-3 max-[1100px]:grid-cols-2" : "grid-cols-4") +
+        " motion-safe:[&_>_:nth-child(-n_+_8)]:[animation:page-enter_520ms_cubic-bezier(0.2,_0.7,_0.2,_1)_both] motion-safe:[&_>_:nth-child(2)]:[animation-delay:60ms] motion-safe:[&_>_:nth-child(3)]:[animation-delay:120ms] motion-safe:[&_>_:nth-child(4)]:[animation-delay:180ms] motion-safe:[&_>_:nth-child(n_+_5)]:[animation-delay:220ms]"
+      }
+    >
       {items.map((product) => (
         <ProductCard key={product.id} p={product} />
       ))}

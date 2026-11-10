@@ -4,9 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LayoutDashboard, Package, ShoppingCart, Users, Tags, Image, Settings, Store, Menu, X } from "lucide-react";
-import { useRouter } from "next/navigation";
-
-import { useStore } from "@/components/store";
 
 const links = [
   { name: "Overview", url: "/admin", icon: LayoutDashboard },
@@ -21,68 +18,7 @@ const links = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { refreshOrders } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [access, setAccess] = useState<"checking" | "allowed" | "denied" | "error">("checking");
-  const [accessError, setAccessError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    async function verifyAdmin() {
-      try {
-        const response = await fetch("/api/auth/me", { cache: "no-store" });
-        const payload: unknown = await response.json();
-        if (!response.ok) {
-          if (response.status === 401) {
-            router.replace("/account");
-            if (active) setAccess("denied");
-            return;
-          }
-          throw new Error(
-            typeof payload === "object" &&
-              payload !== null &&
-              "error" in payload &&
-              typeof payload.error === "string"
-              ? payload.error
-              : "Could not verify admin access.",
-          );
-        }
-
-        const role =
-          typeof payload === "object" &&
-          payload !== null &&
-          "user" in payload &&
-          typeof payload.user === "object" &&
-          payload.user !== null &&
-          "role" in payload.user
-            ? payload.user.role
-            : null;
-        if (role !== "admin") {
-          router.replace("/");
-          if (active) setAccess("denied");
-          return;
-        }
-
-        if (active) setAccess("allowed");
-        void refreshOrders().catch((error: unknown) => {
-          console.error("Could not preload admin orders:", error);
-        });
-      } catch (error) {
-        if (active) {
-          setAccessError(
-            error instanceof Error ? error.message : "Could not verify admin access.",
-          );
-          setAccess("error");
-        }
-      }
-    }
-
-    void verifyAdmin();
-    return () => {
-      active = false;
-    };
-  }, [refreshOrders, router]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -100,33 +36,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [menuOpen]);
-
-  async function signOut() {
-    try {
-      const response = await fetch("/api/auth/logout", { method: "POST" });
-      if (!response.ok) {
-        setAccessError("Could not sign out. Please try again.");
-        return;
-      }
-      window.dispatchEvent(new Event("dw-auth-changed"));
-      router.replace("/account");
-    } catch (error) {
-      setAccessError(
-        error instanceof Error ? error.message : "Could not sign out.",
-      );
-    }
-  }
-
-  if (access === "checking" || access === "denied") {
-    return null;
-  }
-  if (access === "error") {
-    return (
-      <div className="container py-12 [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]" role="alert">
-        Admin access could not be verified: {accessError}
-      </div>
-    );
-  }
 
   return (
     <div className="admin-shell [display:grid] [grid-template-columns:minmax(0,_245px)_minmax(0,_1fr)] [min-height:100vh] [background:#f7f8fa] max-[850px]:[grid-template-columns:minmax(0,_1fr)] [align-items:start]">
@@ -170,10 +79,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
       <main className="admin-main [padding:35px] [min-width:0] max-[520px]:[padding:18px] motion-safe:[&>*]:animate-page-enter motion-safe:[&>:nth-child(2)]:[animation-delay:70ms] motion-safe:[&>:nth-child(3)]:[animation-delay:120ms]">
         <div className="notice [background:#fff7e5] [border:1px_solid_#f1dfb6] [padding:13px_18px] [font-size:12px] [margin-bottom:20px]">
-          Admin session is active.
-          <button type="button" className="ml-3 underline" onClick={signOut}>
-            Sign out
-          </button>
+          Preview mode: the admin isn&apos;t protected by a login yet, and changes
+          only last in this browser (products reset on reload).
         </div>
         {children}
       </main>

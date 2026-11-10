@@ -2,18 +2,46 @@
 
 import { useState } from "react";
 
-import { useStore } from "@/components/store";
-import { categories, money, Product } from "@/lib/data";
+import { ProductInput, useStore } from "@/components/store";
+import {
+  Audience,
+  audiences,
+  categories,
+  ColorFamily,
+  colorFamilies,
+  money,
+  Occasion,
+  occasions,
+  Product,
+  productSizes,
+  requiresSize,
+  sumSizeStock,
+} from "@/lib/data";
+
+const emptySizeStock = () =>
+  Object.fromEntries(productSizes.map((size) => [size, ""])) as Record<string, string>;
 
 const blank = {
   name: "",
   category: "Dirndl",
+  audience: "women" as Audience,
   price: "",
+  oldPrice: "",
   stock: "",
+  sizeStock: emptySizeStock(),
   color: "",
+  colorFamily: "" as ColorFamily | "",
+  lengthCm: "",
+  fit: "",
+  material: "",
+  includes: "",
+  occasions: [] as Occasion[],
+  description: "",
   image: "",
-  imagePublicId: "",
 };
+
+/** Categories where a dress length makes sense. */
+const lengthCategories = ["Dirndl", "Kids"];
 
 export default function Products() {
   const { products, saveProduct, deleteProduct } = useStore();
@@ -22,38 +50,56 @@ export default function Products() {
   const [show, setShow] = useState(false);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
 
-  async function save(event: React.FormEvent) {
+  function save(event: React.FormEvent) {
     event.preventDefault();
     setError("");
     if (!form.image) {
-      setError("Choose and upload a product image before saving.");
+      setError("Choose a product image before saving.");
       return;
     }
-    setSaving(true);
+    if (form.oldPrice !== "" && Number(form.oldPrice) <= Number(form.price)) {
+      setError("The original price must be higher than the sale price.");
+      return;
+    }
 
     try {
-      const product: Omit<Product, "id"> = {
+      const sized = requiresSize(form.category);
+      const sizeStock = sized
+        ? Object.fromEntries(
+            productSizes.map((size) => [size, Math.max(0, Number(form.sizeStock[size] || 0))]),
+          )
+        : undefined;
+      const optional = (value: string) => value.trim() || undefined;
+      const product: ProductInput = {
         name: form.name,
         category: form.category,
+        audience: form.audience,
         price: Number(form.price),
-        stock: Number(form.stock),
+        // Empty clears the sale price on an existing product.
+        oldPrice: form.oldPrice === "" ? (edit ? null : undefined) : Number(form.oldPrice),
+        stock: sizeStock ? sumSizeStock(sizeStock) : Number(form.stock),
+        sizeStock,
         color: form.color,
+        colorFamily: form.colorFamily || undefined,
+        lengthCm:
+          lengthCategories.includes(form.category) && form.lengthCm !== ""
+            ? Number(form.lengthCm)
+            : undefined,
+        fit: optional(form.fit),
+        material: optional(form.material),
+        includes: optional(form.includes),
+        occasions: form.occasions,
         image: form.image,
-        imagePublicId: form.imagePublicId || undefined,
-        description: "Product description",
+        description: form.description,
       };
 
-      await saveProduct(product, edit ?? undefined);
+      saveProduct(product, edit ?? undefined);
       setShow(false);
       setEdit(null);
       setForm(blank);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Could not save product.");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -68,17 +114,28 @@ export default function Products() {
     setForm({
       name: product.name,
       category: product.category,
+      audience: product.audience,
       price: String(product.price),
+      oldPrice: product.oldPrice === undefined ? "" : String(product.oldPrice),
       stock: String(product.stock),
+      sizeStock: Object.fromEntries(
+        productSizes.map((size) => [size, String(product.sizeStock?.[size] ?? 0)]),
+      ),
       color: product.color,
+      colorFamily: product.colorFamily ?? "",
+      lengthCm: product.lengthCm === undefined ? "" : String(product.lengthCm),
+      fit: product.fit ?? "",
+      material: product.material ?? "",
+      includes: product.includes ?? "",
+      occasions: product.occasions ?? [],
+      description: product.description,
       image: product.image,
-      imagePublicId: product.imagePublicId || "",
     });
     setShow(true);
     window.scrollTo(0, 0);
   }
 
-  async function uploadImage(file?: File) {
+  function uploadImage(file?: File) {
     if (!file) return;
     setError("");
 
@@ -91,55 +148,16 @@ export default function Products() {
       return;
     }
 
-    setUploadingImage(true);
-    try {
-      const uploadData = new FormData();
-      uploadData.set("image", file);
-      const response = await fetch("/api/uploads/products", {
-        method: "POST",
-        body: uploadData,
-      });
-      const payload: unknown = await response.json();
-      if (
-        !response.ok ||
-        typeof payload !== "object" ||
-        payload === null ||
-        !("image" in payload) ||
-        typeof payload.image !== "string" ||
-        !("publicId" in payload) ||
-        typeof payload.publicId !== "string"
-      ) {
-        throw new Error(
-          typeof payload === "object" &&
-            payload !== null &&
-            "error" in payload &&
-            typeof payload.error === "string"
-            ? payload.error
-            : "Could not upload image.",
-        );
-      }
-
-      setForm((current) => ({
-        ...current,
-        image: payload.image as string,
-        imagePublicId: payload.publicId as string,
-      }));
-    } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : "Could not upload image.",
-      );
-    } finally {
-      setUploadingImage(false);
-    }
+    // UI preview: the image is only shown in this browser session and is
+    // not uploaded anywhere. Products reset on reload.
+    setForm((current) => ({ ...current, image: URL.createObjectURL(file) }));
   }
 
-  async function removeProduct(productId: number) {
+  function removeProduct(productId: number) {
     if (confirm("Are you sure you want to delete this product?")) {
       setError("");
       try {
-        await deleteProduct(productId);
+        deleteProduct(productId);
       } catch (deleteError) {
         setError(
           deleteError instanceof Error
@@ -188,6 +206,21 @@ export default function Products() {
                 <option key={category}>{category}</option>
               ))}
             </select>
+            <label className="block">
+              <span className="mb-2 block">Shown under</span>
+              <select
+                value={form.audience}
+                onChange={(event) =>
+                  setForm({ ...form, audience: event.target.value as Audience })
+                }
+              >
+                {audiences.map((audience) => (
+                  <option key={audience.value} value={audience.value}>
+                    {audience.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <input
               required
               type="number"
@@ -200,20 +233,146 @@ export default function Products() {
               }
             />
             <input
-              required
               type="number"
               min="0"
-              placeholder="Stock"
-              value={form.stock}
+              step="0.01"
+              placeholder="Original price before sale (optional)"
+              aria-label="Original price before sale (optional)"
+              value={form.oldPrice}
               onChange={(event) =>
-                setForm({ ...form, stock: event.target.value })
+                setForm({ ...form, oldPrice: event.target.value })
               }
             />
+            {requiresSize(form.category) ? (
+              <fieldset className="full border-0 p-0 m-0">
+                <legend className="mb-2">
+                  Stock per size (total{" "}
+                  {sumSizeStock(
+                    Object.fromEntries(
+                      productSizes.map((size) => [size, Number(form.sizeStock[size] || 0)]),
+                    ),
+                  )}
+                  )
+                </legend>
+                <div className="grid grid-cols-4 gap-3 sm:grid-cols-7">
+                  {productSizes.map((size) => (
+                    <label key={size} className="block text-sm">
+                      <span className="mb-1 block">{size}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        value={form.sizeStock[size]}
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            sizeStock: { ...form.sizeStock, [size]: event.target.value },
+                          })
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ) : (
+              <input
+                required
+                type="number"
+                min="0"
+                placeholder="Stock"
+                aria-label="Stock"
+                value={form.stock}
+                onChange={(event) =>
+                  setForm({ ...form, stock: event.target.value })
+                }
+              />
+            )}
             <input
-              placeholder="Color"
+              placeholder="Color name, e.g. Rose"
+              aria-label="Color name"
               value={form.color}
               onChange={(event) =>
                 setForm({ ...form, color: event.target.value })
+              }
+            />
+            <label className="block">
+              <span className="mb-2 block">Colour group (for &ldquo;Shop by colour&rdquo;)</span>
+              <select
+                value={form.colorFamily}
+                onChange={(event) =>
+                  setForm({ ...form, colorFamily: event.target.value as ColorFamily | "" })
+                }
+              >
+                <option value="">None</option>
+                {colorFamilies.map((family) => (
+                  <option key={family.value} value={family.value}>
+                    {family.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {lengthCategories.includes(form.category) && (
+              <input
+                type="number"
+                min="0"
+                placeholder="Dress length in cm, e.g. 65"
+                aria-label="Dress length in cm"
+                value={form.lengthCm}
+                onChange={(event) =>
+                  setForm({ ...form, lengthCm: event.target.value })
+                }
+              />
+            )}
+            <input
+              placeholder="Fit, e.g. Fits true to size"
+              aria-label="Fit"
+              value={form.fit}
+              onChange={(event) => setForm({ ...form, fit: event.target.value })}
+            />
+            <input
+              placeholder="Material, e.g. Cotton blend, satin apron"
+              aria-label="Material"
+              value={form.material}
+              onChange={(event) => setForm({ ...form, material: event.target.value })}
+            />
+            <input
+              placeholder="What's included, e.g. Dress and apron. Blouse sold separately."
+              aria-label="What's included"
+              value={form.includes}
+              onChange={(event) => setForm({ ...form, includes: event.target.value })}
+            />
+            <fieldset className="full border-0 p-0 m-0">
+              <legend className="mb-2">Occasions</legend>
+              <div className="flex flex-wrap gap-x-5 gap-y-2">
+                {occasions.map((occasion) => (
+                  <label key={occasion.value} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="!w-auto !p-0"
+                      checked={form.occasions.includes(occasion.value)}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          occasions: event.target.checked
+                            ? [...form.occasions, occasion.value]
+                            : form.occasions.filter((value) => value !== occasion.value),
+                        })
+                      }
+                    />
+                    {occasion.label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <textarea
+              placeholder="Description"
+              aria-label="Description"
+              rows={4}
+              maxLength={5000}
+              className="w-full [padding:12px] [border:1px_solid_#ddd] [background:white]"
+              value={form.description}
+              onChange={(event) =>
+                setForm({ ...form, description: event.target.value })
               }
             />
             <label className="block">
@@ -221,14 +380,13 @@ export default function Products() {
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                disabled={uploadingImage || saving}
                 onChange={(event) => {
-                  void uploadImage(event.target.files?.[0]);
+                  uploadImage(event.target.files?.[0]);
                   event.target.value = "";
                 }}
               />
               <span className="mt-2 block text-sm text-gray-500">
-                JPEG, PNG or WebP · maximum 5 MB · uploaded to Cloudinary
+                JPEG, PNG or WebP · maximum 5 MB · preview only, not uploaded
               </span>
             </label>
             {form.image && (
@@ -238,15 +396,11 @@ export default function Products() {
                   alt="Selected product preview"
                   className="h-28 w-28 rounded border object-contain"
                 />
-                <span>{uploadingImage ? "Uploading image..." : "Image ready"}</span>
+                <span>Image ready</span>
               </div>
             )}
-            <button className="btn full [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#9b3345] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]" disabled={saving || uploadingImage}>
-              {uploadingImage
-                ? "UPLOADING IMAGE..."
-                : saving
-                  ? "SAVING..."
-                  : "SAVE"}
+            <button className="btn full [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#9b3345] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]">
+              SAVE
             </button>
           </form>
         </div>

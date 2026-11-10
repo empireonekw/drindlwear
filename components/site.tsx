@@ -12,16 +12,39 @@ import {
   Truck,
   UserRound,
   X,
-  ChevronRight,
+  ChevronDown,
   RotateCcw,
 } from "lucide-react";
 
+import { mainNav } from "@/lib/navigation";
 import { useStore } from "./store";
+
+const navItemClass =
+  "nav-item [position:static] [height:100%] [display:flex] [align-items:center] max-[850px]:[display:block] max-[850px]:[height:auto] max-[850px]:[border-bottom:1px_solid_#eee9e6]";
+const topLinkClass =
+  "[display:flex] [height:100%] [align-items:center] [font-size:12px] [letter-spacing:1.6px] [text-transform:uppercase] [transition:color_180ms_ease] hover:[color:#b76474] max-[850px]:[width:100%] max-[850px]:[min-height:64px] max-[850px]:[padding:16px_27px] max-[850px]:[font-size:15px] max-[850px]:[letter-spacing:1.5px] max-[850px]:[color:#302729] max-[850px]:hover:[background:#fbf7f5] max-[850px]:hover:[color:#781d2d]";
+const megaLinkClass =
+  "[display:block] [padding:6px_0] [font-size:14px] [color:#211c1d] [transition:color_160ms_ease] hover:[color:#781d2d]";
+const columnTitleClass =
+  "[font-size:11px] [letter-spacing:1.6px] [text-transform:uppercase] [color:#786565]";
 export function Header() {
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState(false);
   const [q, setQ] = useState("");
+  /** Mobile drawer: which menu section is expanded. */
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  /**
+   * Desktop: after clicking a mega-menu link the pointer is still over the
+   * menu, so keep it closed until the pointer leaves that item.
+   */
+  const [megaSuppressed, setMegaSuppressed] = useState(false);
   const { items, wishlist } = useStore();
+
+  function closeMenus() {
+    setMenu(false);
+    setOpenSection(null);
+    setMegaSuppressed(true);
+  }
   const cartCount = items.reduce((total, item) => total + item.qty, 0);
 
   useEffect(() => {
@@ -106,55 +129,112 @@ export function Header() {
             </Link>
           </div>
           <div className="mobile-menu-links [display:contents] max-[850px]:[display:block] max-[850px]:[flex:0_0_auto]">
-            {[
-              "Women",
-              "Men",
-              "Kids",
-              "Collections",
-              "Sale",
-              "Style Journal",
-            ].map((label, index) => (
-              <div className="nav-item [position:relative] [height:100%] [display:flex] [align-items:center] [&>a]:[font-size:12px] [&>a]:[letter-spacing:1.6px] [&>a]:[text-transform:uppercase] [&:hover_.dropdown]:[display:flex] [&>a:hover]:[color:#b76474] max-[850px]:[display:block] max-[850px]:[width:auto] max-[850px]:[height:auto] max-[850px]:[&_>_a]:[display:flex] max-[850px]:[&_>_a]:[width:100%] max-[850px]:[&_>_a]:[min-height:64px] max-[850px]:[&_>_a]:[align-items:center] max-[850px]:[&_>_a]:[justify-content:space-between] max-[850px]:[&_>_a]:[gap:16px] max-[850px]:[&_>_a]:[padding:16px_27px] max-[850px]:[&_>_a]:[border-bottom:1px_solid_#eee9e6] max-[850px]:[&_>_a]:[color:#302729] max-[850px]:[&_>_a]:[font-size:15px] max-[850px]:[&_>_a]:[font-weight:400] max-[850px]:[&_>_a]:[letter-spacing:1.5px] max-[850px]:[&_>_a]:[line-height:1.3] max-[850px]:[&_>_a]:[text-transform:uppercase] max-[850px]:[&_>_a]:[transition:background-color_180ms_ease,_color_180ms_ease] max-[850px]:[&_>_a:hover]:[padding-left:27px] max-[850px]:[&_>_a:hover]:[background:#fbf7f5] max-[850px]:[&_>_a:hover]:[color:#781d2d] max-[850px]:[&_>_a:focus-visible]:[padding-left:27px] max-[850px]:[&_>_a:focus-visible]:[background:#fbf7f5] max-[850px]:[&_>_a:focus-visible]:[color:#781d2d]" key={label}>
-                <Link
-                  href={
-                    index === 5
-                      ? "/club"
-                      : `/collections/${label.toLowerCase()}`
-                  }
-                  onClick={() => setMenu(false)}
+            {mainNav.map((item) => {
+              const sectionId = `nav-section-${item.label.toLowerCase()}`;
+              const expanded = openSection === item.label;
+              const hoverOpen = megaSuppressed
+                ? ""
+                : " min-[851px]:[&:hover_.mega]:[display:block] min-[851px]:[&:focus-within_.mega]:[display:block]";
+              const linkColor = item.highlight ? " [color:#a32232] max-[850px]:[color:#a32232]" : "";
+              return (
+                <div
+                  className={navItemClass + hoverOpen}
+                  key={item.label}
+                  onMouseLeave={() => setMegaSuppressed(false)}
                 >
-                  <span>{label}</span>
-                  {index < 4 && (
-                    <ChevronRight
-                      className="mobile-menu-arrow [display:none] max-[850px]:[display:block] max-[850px]:[flex:0_0_auto] max-[850px]:[color:#786565]"
-                      size={18}
-                      aria-hidden="true"
-                    />
-                  )}
-                </Link>
-                {index < 4 && (
-                  <div className="dropdown [display:none] [position:absolute] [top:100%] [left:-30px] [background:white] [min-width:220px] [box-shadow:0_12px_24px_#0002] [padding:20px] [flex-direction:column] [gap:16px] [&_a]:[font-size:12px] max-[850px]:[display:none]">
-                    {[
-                      "Explore All",
-                      "Dirndl",
-                      "Dirndl Blouses",
-                      "Lederhosen",
-                      "Traditional Jackets",
-                      "Accessories",
-                    ].map((item) => (
-                      <Link
-                        key={item}
-                        href={`/collections/${encodeURIComponent(
-                          item.toLowerCase(),
-                        )}`}
+                  <Link
+                    href={item.href}
+                    onClick={closeMenus}
+                    className={
+                      topLinkClass + linkColor + (item.columns ? " max-[850px]:[display:none]" : "")
+                    }
+                  >
+                    {item.label}
+                  </Link>
+
+                  {item.columns && (
+                    <>
+                      {/* Mobile: expandable section inside the drawer */}
+                      <button
+                        type="button"
+                        aria-expanded={expanded}
+                        aria-controls={sectionId}
+                        onClick={() => setOpenSection(expanded ? null : item.label)}
+                        className="[display:none] max-[850px]:[display:flex] max-[850px]:[width:100%] max-[850px]:[min-height:64px] max-[850px]:[align-items:center] max-[850px]:[justify-content:space-between] max-[850px]:[padding:16px_27px] max-[850px]:[font-size:15px] max-[850px]:[letter-spacing:1.5px] max-[850px]:[text-transform:uppercase] max-[850px]:[color:#302729]"
                       >
-                        {item}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                        {item.label}
+                        <ChevronDown
+                          size={18}
+                          aria-hidden="true"
+                          className={
+                            "[color:#786565] [transition:transform_180ms_ease]" +
+                            (expanded ? " [transform:rotate(180deg)]" : "")
+                          }
+                        />
+                      </button>
+                      {expanded && (
+                        <div
+                          id={sectionId}
+                          className="[display:none] max-[850px]:[display:grid] max-[850px]:[gap:18px] max-[850px]:[padding:0_27px_22px]"
+                        >
+                          <Link href={item.href} onClick={closeMenus} className={megaLinkClass + " [font-weight:600]"}>
+                            Shop all {item.label.toLowerCase()}
+                          </Link>
+                          {item.columns.map((column) => (
+                            <div key={column.title}>
+                              <p className={columnTitleClass + " [margin:0_0_4px]"}>{column.title}</p>
+                              {column.links.map((link) => (
+                                <Link key={link.href} href={link.href} onClick={closeMenus} className={megaLinkClass}>
+                                  {link.label}
+                                  {link.note && (
+                                    <span className="[margin-left:8px] [font-size:12px] [color:#786565]">{link.note}</span>
+                                  )}
+                                </Link>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Desktop: mega-menu panel, full width under the header */}
+                      <div className="mega [display:none] [position:absolute] [left:0] [right:0] [top:100%] [z-index:45] [background:#fff] [border-top:1px_solid_#eee] [box-shadow:0_18px_30px_rgb(33_28_29_/_10%)] max-[850px]:[display:none]">
+                        <div className="[max-width:1100px] [margin:0_auto] [padding:28px_32px_34px] [display:grid] [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] [gap:32px]">
+                          {item.columns.map((column) => (
+                            <div key={column.title}>
+                              <p className={columnTitleClass + " [margin:0_0_12px]"}>{column.title}</p>
+                              {column.links.map((link) => (
+                                <Link key={link.href} href={link.href} onClick={closeMenus} className={megaLinkClass}>
+                                  {link.label}
+                                  {link.note && (
+                                    <span className="[margin-left:8px] [font-size:12px] [color:#786565]">{link.note}</span>
+                                  )}
+                                </Link>
+                              ))}
+                            </div>
+                          ))}
+                          {item.feature && (
+                            <Link
+                              href={item.feature.href}
+                              onClick={closeMenus}
+                              className="[display:block] [color:#211c1d] hover:[color:#781d2d]"
+                            >
+                              <img
+                                src={item.feature.image}
+                                alt=""
+                                className="[width:100%] [aspect-ratio:4/3] [object-fit:cover] [margin-bottom:10px]"
+                              />
+                              <span className="[font-size:13px] [letter-spacing:1.2px] [text-transform:uppercase]">
+                                {item.feature.title} →
+                              </span>
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="mobile-menu-benefits [display:none] max-[850px]:[display:grid] max-[850px]:[gap:16px] max-[850px]:[margin-top:auto] max-[850px]:[padding:22px_27px_max(22px,_env(safe-area-inset-bottom))] max-[850px]:[background:#f5f2f0] max-[850px]:[color:#443a3a] max-[850px]:[&_>_div]:[display:flex] max-[850px]:[&_>_div]:[align-items:center] max-[850px]:[&_>_div]:[gap:14px] max-[850px]:[&_>_div]:[font-size:13px] max-[850px]:[&_>_div]:[letter-spacing:0.2px] max-[850px]:[&_svg]:[flex:0_0_auto] max-[850px]:[&_svg]:[color:#781d2d] max-[850px]:[&_svg]:[stroke-width:1.6]" aria-label="Shopping benefits">
             <div>
@@ -206,35 +286,11 @@ export function Header() {
 export function Footer() {
   const [newsletterMessage, setNewsletterMessage] = useState("");
 
-  async function subscribe(event: React.FormEvent<HTMLFormElement>) {
+  function subscribe(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNewsletterMessage("");
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    try {
-      const response = await fetch("/api/newsletter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.get("email") }),
-      });
-      const payload: unknown = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          typeof payload === "object" &&
-            payload !== null &&
-            "error" in payload &&
-            typeof payload.error === "string"
-            ? payload.error
-            : "Could not subscribe.",
-        );
-      }
-      setNewsletterMessage("Thank you for subscribing.");
-      form.reset();
-    } catch (error) {
-      setNewsletterMessage(
-        error instanceof Error ? error.message : "Could not subscribe.",
-      );
-    }
+    // UI preview: nothing is sent or stored yet.
+    setNewsletterMessage("Thank you for subscribing.");
+    event.currentTarget.reset();
   }
 
   return (

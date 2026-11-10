@@ -1,106 +1,244 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useMemo, useRef } from "react";
+import Link from "next/link";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { SlidersHorizontal, X } from "lucide-react";
 
+import { CollectionFilters } from "@/components/collection-filters";
 import { ProductGrid } from "@/components/product";
 import { useStore } from "@/components/store";
-import { categories } from "@/lib/data";
+import { getCollection } from "@/lib/collections";
+import { colorFamilies, dirndlLengths, money, occasions } from "@/lib/data";
+import {
+  activeFilterCount,
+  applyFilters,
+  emptyFilters,
+  facetOptions,
+  Filters,
+  filtersToParams,
+  optionCount,
+  parseFilters,
+  sortOptions,
+  SortValue,
+} from "@/lib/filters";
 
-const collectionSlugs = [
-  "all",
-  "women",
-  "collections",
-  "new arrivals",
-  "sale",
-  "krüger club",
-];
-const menCategories = [
-  "Lederhosen",
-  "Traditional Shirts",
-  "Traditional Jackets",
-];
+export default function CollectionPage() {
+  // useSearchParams needs a Suspense boundary in the App Router.
+  return (
+    <Suspense fallback={null}>
+      <Collection />
+    </Suspense>
+  );
+}
 
-export default function Collection() {
+function Collection() {
   const { slug } = useParams<{ slug: string }>();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const { products } = useStore();
-  const [sort, setSort] = useState("featured");
-  const [filter, setFilter] = useState("All");
-  const title = decodeURIComponent(slug).replace(/-/g, " ");
+  const drawer = useRef<HTMLDialogElement>(null);
 
-  const filtered = useMemo(() => {
-    let matchingProducts = products.filter((product) => {
-      const normalizedTitle = title.toLowerCase();
-      return (
-        collectionSlugs.includes(normalizedTitle) ||
-        (normalizedTitle === "men"
-          ? menCategories.includes(product.category)
-          : normalizedTitle === "kids"
-            ? product.category === "Kids"
-            : product.category.toLowerCase() === normalizedTitle ||
-              product.name.toLowerCase().includes(normalizedTitle))
-      );
-    });
+  const collection = getCollection(slug);
+  const title = collection?.title ?? decodeURIComponent(slug).replace(/-/g, " ");
 
-    if (title.toLowerCase() === "sale") {
-      matchingProducts = matchingProducts.filter(
-        (product) => product.oldPrice,
-      );
-    }
+  // Filters live in the URL so filtered pages can be shared and the back button works.
+  const filters = useMemo(
+    () => parseFilters(new URLSearchParams(searchParams.toString())),
+    [searchParams],
+  );
+  const setFilters = (next: Filters) => {
+    const query = filtersToParams(next).toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 
-    if (filter !== "All") {
-      matchingProducts = matchingProducts.filter(
-        (product) => product.category === filter,
-      );
-    }
+  const inCollection = useMemo(
+    () => (collection ? products.filter(collection.matches) : []),
+    [products, collection],
+  );
+  const options = useMemo(() => facetOptions(inCollection), [inCollection]);
+  const results = useMemo(() => applyFilters(inCollection, filters), [inCollection, filters]);
+  const count = (facet: Parameters<typeof optionCount>[2], value: string) =>
+    optionCount(inCollection, filters, facet, value);
+  const activeCount = activeFilterCount(filters);
 
-    return [...matchingProducts].sort((first, second) =>
-      sort === "low"
-        ? first.price - second.price
-        : sort === "high"
-          ? second.price - first.price
-          : sort === "name"
-            ? first.name.localeCompare(second.name)
-            : first.id - second.id,
-    );
-  }, [products, title, sort, filter]);
+  // Removable chips for every active filter.
+  const chips: { label: string; next: Filters }[] = [
+    ...filters.categories.map((value) => ({
+      label: value,
+      next: { ...filters, categories: filters.categories.filter((entry) => entry !== value) },
+    })),
+    ...filters.sizes.map((value) => ({
+      label: `Size ${value}`,
+      next: { ...filters, sizes: filters.sizes.filter((entry) => entry !== value) },
+    })),
+    ...filters.colours.map((value) => ({
+      label: colorFamilies.find((family) => family.value === value)?.label ?? value,
+      next: { ...filters, colours: filters.colours.filter((entry) => entry !== value) },
+    })),
+    ...filters.lengths.map((value) => ({
+      label: `${dirndlLengths.find((length) => length.slug === value)?.label ?? value} length`,
+      next: { ...filters, lengths: filters.lengths.filter((entry) => entry !== value) },
+    })),
+    ...filters.occasions.map((value) => ({
+      label: occasions.find((occasion) => occasion.value === value)?.label ?? value,
+      next: { ...filters, occasions: filters.occasions.filter((entry) => entry !== value) },
+    })),
+    ...(filters.minPrice !== undefined
+      ? [{ label: `From ${money(filters.minPrice)}`, next: { ...filters, minPrice: undefined } }]
+      : []),
+    ...(filters.maxPrice !== undefined
+      ? [{ label: `Up to ${money(filters.maxPrice)}`, next: { ...filters, maxPrice: undefined } }]
+      : []),
+    ...(filters.inStock ? [{ label: "In stock", next: { ...filters, inStock: false } }] : []),
+    ...(filters.onSale ? [{ label: "On sale", next: { ...filters, onSale: false } }] : []),
+  ];
+  const clearAll = () => setFilters(emptyFilters(filters.sort));
+
+  const panel = (
+    <CollectionFilters options={options} filters={filters} count={count} onChange={setFilters} />
+  );
 
   return (
-    <div className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]">
-      <div className="breadcrumb [font-size:11px] [color:#888] [padding:24px_0]">Home / Collections / {title}</div>
-      <h1 className="page-heading [text-align:center] [font:42px_Georgia,serif] [margin:35px_0_14px] [color:#781d2d]">
+    <div className="mx-auto max-w-[1360px] px-8 pb-20 max-[520px]:px-4">
+      <nav aria-label="Breadcrumb" className="py-6 text-[12px] text-[#786565]">
+        <ol className="m-0 flex list-none flex-wrap gap-2 p-0">
+          <li><Link href="/" className="hover:text-[#781d2d]">Home</Link></li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" className="text-[#211c1d]">{title}</li>
+        </ol>
+      </nav>
+      <h1 className="m-0 mt-4 text-center font-serif text-[42px] font-normal text-[#781d2d] max-[520px]:text-[34px]">
         {title.charAt(0).toUpperCase() + title.slice(1)}
       </h1>
-      <p className="subtitle [text-align:center] [color:#777] [font-size:13px] [letter-spacing:1px] [margin-bottom:38px]">FIND YOUR NEXT FAVORITE LOOK</p>
+      <p className="mb-10 mt-3 text-center text-[13px] tracking-[1px] text-[#777]">
+        {collection?.subtitle ?? "FIND YOUR NEXT FAVORITE LOOK"}
+      </p>
 
-      <div className="filter-chips [display:flex] [gap:10px] [flex-wrap:wrap] [&_button]:[border:1px_solid_#ddd] [&_button]:[padding:9px_13px] [&_button]:[font-size:12px] [&_.active]:[background:#781d2d] [&_.active]:[color:white]">
-        {["All", ...categories].map((category) => (
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-[#eee] py-3">
+        <div className="flex items-center gap-4">
           <button
-            className={filter === category ? "active" : ""}
-            onClick={() => setFilter(category)}
-            key={category}
+            type="button"
+            onClick={() => drawer.current?.showModal()}
+            className="hidden h-11 items-center gap-2 border border-[#cfc3bf] bg-white px-4 text-sm max-[850px]:inline-flex"
           >
-            {category}
+            <SlidersHorizontal size={17} aria-hidden="true" />
+            Filters{activeCount > 0 ? ` (${activeCount})` : ""}
           </button>
-        ))}
+          <p className="m-0 text-sm text-[#5e5050]" aria-live="polite">
+            {results.length} {results.length === 1 ? "product" : "products"}
+          </p>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-[#786565] max-[420px]:sr-only">Sort by</span>
+          <select
+            value={filters.sort}
+            onChange={(event) => setFilters({ ...filters, sort: event.target.value as SortValue })}
+            className="h-11 border border-[#cfc3bf] bg-white px-3"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
-      <div className="toolbar [display:flex] [justify-content:space-between] [align-items:center] [border-top:1px_solid_#eee] [border-bottom:1px_solid_#eee] [padding:16px_0] [margin:35px_0] [&_select]:[padding:12px] [&_select]:[border:1px_solid_#ddd] [&_select]:[background:white] max-[520px]:[flex-wrap:wrap] max-[520px]:[gap:12px]">
-        <span>{filtered.length} Products</span>
-        <select value={sort} onChange={(event) => setSort(event.target.value)}>
-          <option value="featured">Featured</option>
-          <option value="low">Price: Low to High</option>
-          <option value="high">Price: High to Low</option>
-          <option value="name">Name A–Z</option>
-        </select>
-      </div>
-
-      {filtered.length ? (
-        <ProductGrid items={filtered} />
-      ) : (
-        <div className="empty [text-align:center] [padding:100px_0] [color:#777]">No products found.</div>
+      {/* Active filters */}
+      {chips.length > 0 && (
+        <ul className="m-0 mt-4 flex list-none flex-wrap items-center gap-2 p-0" aria-label="Active filters">
+          {chips.map((chip) => (
+            <li key={chip.label}>
+              <button
+                type="button"
+                onClick={() => setFilters(chip.next)}
+                aria-label={`Remove filter: ${chip.label}`}
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-[#f3e6e3] px-4 text-[13px] hover:bg-[#ead6d2]"
+              >
+                {chip.label}
+                <X size={14} aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+          <li>
+            <button type="button" onClick={clearAll} className="h-9 px-2 text-[13px] underline underline-offset-4">
+              Clear all
+            </button>
+          </li>
+        </ul>
       )}
-      <div className="h-20" />
+
+      <div className="mt-6 grid grid-cols-[240px_minmax(0,1fr)] gap-10 max-[850px]:grid-cols-1">
+        <aside aria-label="Filters" className="max-[850px]:hidden">
+          {panel}
+        </aside>
+
+        <div>
+          {results.length ? (
+            <ProductGrid items={results} columns={3} />
+          ) : (
+            <div className="py-24 text-center">
+              <p className="m-0 text-[#777]">
+                {inCollection.length ? "No products match these filters." : "No products found."}
+              </p>
+              {activeCount > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="mt-5 border border-[#211c1d] px-6 py-3 text-[12px] uppercase tracking-[1.4px] hover:bg-[#211c1d] hover:text-white"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile filter drawer */}
+      <dialog
+        ref={drawer}
+        aria-label="Filters"
+        onClick={(event) => {
+          if (event.target === drawer.current) drawer.current?.close();
+        }}
+        className="m-0 ml-auto h-dvh max-h-none w-[min(420px,100vw)] max-w-none p-0 text-[#211c1d] backdrop:bg-[rgb(25_20_21/55%)]"
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between border-b border-[#eee] px-5 py-3">
+            <h2 className="m-0 font-serif text-[24px] font-normal">Filters</h2>
+            <button
+              type="button"
+              onClick={() => drawer.current?.close()}
+              aria-label="Close filters"
+              className="grid h-11 w-11 place-items-center"
+            >
+              <X size={22} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5">{panel}</div>
+          <div className="grid grid-cols-[auto_1fr] gap-3 border-t border-[#eee] p-4">
+            <button
+              type="button"
+              onClick={clearAll}
+              disabled={activeCount === 0}
+              className="h-12 px-4 text-sm underline underline-offset-4 disabled:text-[#b5a9a9] disabled:no-underline"
+            >
+              Clear all
+            </button>
+            <button
+              type="button"
+              onClick={() => drawer.current?.close()}
+              className="h-12 bg-[#781d2d] text-[12px] font-medium uppercase tracking-[1.5px] text-white hover:bg-[#9b3345]"
+            >
+              Show {results.length} {results.length === 1 ? "product" : "products"}
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }

@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { Eye, X } from "lucide-react";
 
-import { useStore } from "@/components/store";
+import { OrderStatus, useStore } from "@/components/store";
 import { money } from "@/lib/data";
 import { formatOrderId } from "@/lib/order";
 
-const orderStatuses = [
+const orderStatuses: OrderStatus[] = [
   "New",
   "Processing",
   "Shipped",
@@ -30,10 +30,10 @@ export default function Orders() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [selectedOrderId]);
 
-  async function changeStatus(orderId: string, status: string) {
+  function changeStatus(orderId: string, status: OrderStatus) {
     setError("");
     try {
-      await updateOrderStatus(orderId, status);
+      updateOrderStatus(orderId, status);
     } catch (updateError) {
       setError(
         updateError instanceof Error
@@ -85,7 +85,7 @@ export default function Orders() {
                       aria-label={`Change status for order ${order.id}`}
                       value={order.status}
                       onChange={(event) =>
-                        changeStatus(order.id, event.target.value)
+                        changeStatus(order.id, event.target.value as OrderStatus)
                       }
                     >
                       {orderStatuses.map((status) => (
@@ -177,10 +177,12 @@ export default function Orders() {
               {selectedOrder.items?.length ? (
                 <div className="order-items-list [border-top:1px_solid_#eee8e7]">
                   {selectedOrder.items.map((item) => (
-                    <div className="order-item-row [display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [padding:14px_2px] [border-bottom:1px_solid_#eee8e7] [font-size:13px] [&_div]:[display:flex] [&_div]:[flex-direction:column] [&_div]:[gap:5px] [&_div_span]:[color:#817576] [&_div_span]:[font-size:12px] [&_>_strong]:[white-space:nowrap]" key={item.productId}>
+                    <div className="order-item-row [display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [padding:14px_2px] [border-bottom:1px_solid_#eee8e7] [font-size:13px] [&_div]:[display:flex] [&_div]:[flex-direction:column] [&_div]:[gap:5px] [&_div_span]:[color:#817576] [&_div_span]:[font-size:12px] [&_>_strong]:[white-space:nowrap]" key={`${item.productId}-${item.size ?? ""}`}>
                       <div>
                         <strong>{item.name}</strong>
-                        <span>Qty {item.qty} × {money(item.price)}</span>
+                        <span>
+                          {item.size ? `Size ${item.size} · ` : ""}Qty {item.qty} × {money(item.price)}
+                        </span>
                       </div>
                       <strong>{money(item.qty * item.price)}</strong>
                     </div>

@@ -4,14 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { useStore } from "@/components/store";
-import { money } from "@/lib/data";
+import { availableStock, money, requiresSize } from "@/lib/data";
 
 const addressFields = [
   ["first", "First Name"],
   ["last", "Last Name"],
   ["email", "E-Mail"],
   ["phone", "Phone Number"],
-  ["street", "Street und Hausnummer"],
+  ["street", "Street and house number"],
   ["zip", "Postal Code"],
   ["city", "City"],
 ];
@@ -26,21 +26,33 @@ export default function Checkout() {
       sum + (products.find((product) => product.id === item.id)?.price || 0) * item.qty,
     0,
   );
+  // Stock is per product, so add up every size of the same product.
+  const productQty = (id: number) =>
+    items.reduce((sum, item) => (item.id === id ? sum + item.qty : sum), 0);
   const inventoryIssues = items.flatMap((item) => {
+    const key = `${item.id}-${item.size ?? ""}`;
     const product = products.find((entry) => entry.id === item.id);
     if (!product) {
-      return [{ id: item.id, message: "This product is no longer available." }];
+      return [{ key, message: "This product is no longer available." }];
     }
-    if (product.stock >= item.qty) return [];
+    if (requiresSize(product.category) && !item.size) {
+      return [{ key, message: `Choose a size for ${product.name}.` }];
+    }
+    const available = Math.min(
+      availableStock(product, item.size),
+      product.stock - (productQty(item.id) - item.qty),
+    );
+    if (item.qty <= available) return [];
+    const sizeNote = item.size ? ` in size ${item.size}` : "";
     return [{
-      id: item.id,
-      message: product.stock === 0
-        ? `${product.name} is out of stock.`
-        : `Only ${product.stock} ${product.name} left; your cart has ${item.qty}.`,
+      key,
+      message: available <= 0
+        ? `${product.name} is out of stock${sizeNote}.`
+        : `Only ${available} ${product.name} left${sizeNote}; your cart has ${item.qty}.`,
     }];
   });
 
-  async function placeOrder(event: React.FormEvent<HTMLFormElement>) {
+  function placeOrder(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!items.length) return;
 
@@ -48,7 +60,7 @@ export default function Checkout() {
     setError("");
     setSubmitting(true);
     try {
-      await checkout({
+      checkout({
         first: String(formData.get("first")),
         last: String(formData.get("last")),
         email: String(formData.get("email")),
@@ -84,7 +96,7 @@ export default function Checkout() {
       ) : (
         <form className="form-panel [max-width:520px] [margin:40px_auto_90px] [&_label]:[display:block] [&_label]:[margin:17px_0_8px] [&_label]:[font-size:12px] [&_input]:[width:100%] [&_input]:[padding:14px] [&_input]:[border:1px_solid_#ddd] [&_textarea]:[width:100%] [&_textarea]:[padding:14px] [&_textarea]:[border:1px_solid_#ddd] [&_.btn]:[width:100%] [&_.btn]:[margin-top:20px]" onSubmit={placeOrder}>
           <div className="notice [background:#fff7e5] [border:1px_solid_#f1dfb6] [padding:13px_18px] [font-size:12px] [margin-bottom:20px]">
-            Checkout saves your order and checks stock. No payment is processed.
+            UI preview: orders are saved in this browser only. No payment is processed.
           </div>
           {error && <p role="alert">{error}</p>}
           {inventoryIssues.length > 0 && (
@@ -92,7 +104,7 @@ export default function Checkout() {
               <p>Please update your cart before ordering:</p>
               <ul>
                 {inventoryIssues.map((issue) => (
-                  <li key={issue.id}>{issue.message}</li>
+                  <li key={issue.key}>{issue.message}</li>
                 ))}
               </ul>
               <Link className="underline" href="/cart">Return to cart</Link>

@@ -31,7 +31,9 @@ button, input, select, textarea {
 
 button {
   cursor: pointer;
-  border: 0;
+  /* Width only: the `border: 0` shorthand also set border-style to none,
+     which stopped Tailwind's `border` classes from drawing on buttons. */
+  border-width: 0;
   background: transparent;
 }
 

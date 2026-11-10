@@ -1,58 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
 
+import { useStore } from "@/components/store";
 import { money } from "@/lib/data";
-import { useAutoRefresh } from "@/lib/use-auto-refresh";
-
-type DashboardData = {
-  summary: {
-    orderValue: number;
-    orderCount: number;
-    customerCount: number;
-    productCount: number;
-  };
-  monthlyOrders: { label: string; orders: number }[];
-};
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [error, setError] = useState("");
+  const { orders, products } = useStore();
 
-  const loadDashboard = useCallback(async () => {
-    try {
-      const response = await fetch("/api/dashboard", { cache: "no-store" });
-      const payload: unknown = await response.json();
-      if (!response.ok) {
-        const message =
-          typeof payload === "object" &&
-          payload !== null &&
-          "error" in payload &&
-          typeof payload.error === "string"
-            ? payload.error
-            : "Could not load dashboard.";
-        throw new Error(message);
-      }
-      setData(payload as DashboardData);
-      setError("");
-    } catch (loadError: unknown) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Could not load dashboard.",
-      );
-    }
-  }, []);
-
-  useAutoRefresh(loadDashboard);
-  useEffect(() => {
-    void loadDashboard();
-  }, [loadDashboard]);
+  const now = new Date();
+  const monthlyOrders = Array.from({ length: 12 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - 11 + index, 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    return {
+      label: date.toLocaleString("en", { month: "short" }),
+      orders: orders.filter((order) => order.date.startsWith(key)).length,
+    };
+  });
+  const data = {
+    summary: {
+      orderValue: orders
+        .filter((order) => order.status !== "Cancelled")
+        .reduce((sum, order) => sum + order.total, 0),
+      orderCount: orders.length,
+      customerCount: new Set(orders.map((order) => order.customerEmail)).size,
+      productCount: products.length,
+    },
+    monthlyOrders,
+  };
 
   const maxOrders = Math.max(
     1,
-    ...(data?.monthlyOrders.map((month) => month.orders) ?? []),
+    ...(data.monthlyOrders.map((month) => month.orders) ?? []),
   );
   const metrics = data
     ? [
@@ -71,13 +50,12 @@ export default function Dashboard() {
           MANAGE PRODUCTS
         </Link>
       </div>
-      {error && <p role="alert">{error}</p>}
       <div className="stat-grid [display:grid] [grid-template-columns:repeat(4,1fr)] [gap:18px] max-[850px]:[grid-template-columns:repeat(2,1fr)] max-[520px]:[gap:8px] motion-safe:[&_>_*]:[animation:page-enter_520ms_cubic-bezier(0.2,_0.7,_0.2,_1)_both] motion-safe:[&_>_:nth-child(2)]:[animation-delay:60ms] motion-safe:[&_>_:nth-child(3)]:[animation-delay:120ms] motion-safe:[&_>_:nth-child(4)]:[animation-delay:180ms]">
         {metrics.map(([label, value]) => (
           <div className="stat [background:white] [padding:25px] [border:1px_solid_#eee] [border-radius:8px] [&_strong]:[display:block] [&_strong]:[font-size:29px] [&_strong]:[margin:14px_0] max-[520px]:[padding:13px] max-[520px]:[&_strong]:[font-size:22px] motion-safe:[transition:transform_240ms_ease,_box-shadow_240ms_ease] motion-safe:[&:hover]:[transform:translateY(-3px)] motion-safe:[&:hover]:[box-shadow:0_12px_28px_rgb(33_28_29_/_8%)]" key={label}>
             <span className="muted [color:#999]">{label}</span>
             <strong>{value}</strong>
-            <span className="text-xs text-gray-500">Live data</span>
+            <span className="text-xs text-gray-500">This browser only</span>
           </div>
         ))}
       </div>

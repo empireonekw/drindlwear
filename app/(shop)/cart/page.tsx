@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { useStore } from "@/components/store";
-import { money } from "@/lib/data";
+import { availableStock, money, requiresSize } from "@/lib/data";
 
 export default function Cart() {
   const { items, products, quantity, remove } = useStore();
@@ -17,8 +17,21 @@ export default function Cart() {
     (sum, item) => sum + item.qty * (item.product?.price || 0),
     0,
   );
+  // Stock is per product, so add up every size of the same product.
+  const productQty = (id: number) =>
+    rows.reduce((sum, row) => (row.id === id ? sum + row.qty : sum), 0);
+  const missingSize = (row: (typeof rows)[number]) =>
+    Boolean(row.product && requiresSize(row.product.category) && !row.size);
+  /** Units of this line's size still available, after other sizes in the cart. */
+  const lineAvailable = (row: (typeof rows)[number]) =>
+    row.product
+      ? Math.min(
+          availableStock(row.product, row.size),
+          row.product.stock - (productQty(row.id) - row.qty),
+        )
+      : 0;
   const inventoryIssue = rows.some(
-    ({ qty, product }) => !product || product.stock < qty,
+    (row) => !row.product || row.qty > lineAvailable(row) || missingSize(row),
   );
 
   return (
@@ -34,42 +47,63 @@ export default function Cart() {
       ) : (
         <div className="cart-layout [display:grid] [grid-template-columns:minmax(0,_2fr)_minmax(0,_1fr)] [gap:50px] [padding:40px_0_90px] max-[850px]:[grid-template-columns:minmax(0,_1fr)] [&_>_*]:[min-width:0] max-[850px]:[&_>_*]:[min-width:0]">
           <div>
-            {rows.map(({ id, qty, product }) => (
-              <div className="cart-item [display:flex] [gap:20px] [padding:20px_0] [border-bottom:1px_solid_#eee] [&_img]:[width:100px] [&_img]:[height:135px] [&_img]:[object-fit:cover] [&_.info]:[flex:1] motion-safe:[&_img]:[transition:transform_650ms_cubic-bezier(0.2,_0.7,_0.2,_1)]" key={id}>
+            {rows.map(({ id, qty, size, product }) => (
+              <div className="cart-item [display:flex] [gap:20px] [padding:20px_0] [border-bottom:1px_solid_#eee] [&_img]:[width:100px] [&_img]:[height:135px] [&_img]:[object-fit:cover] [&_.info]:[flex:1] motion-safe:[&_img]:[transition:transform_650ms_cubic-bezier(0.2,_0.7,_0.2,_1)]" key={`${id}-${size ?? ""}`}>
                 <img src={product!.image} alt={product!.name} />
                 <div className="info">
                   <Link href={`/product/${id}`}>
                     <strong>{product!.name}</strong>
                   </Link>
-                  <p className="muted [color:#999]">{product!.color}</p>
-                  {product!.stock <= 0 ? (
-                    <p className="stock-error [color:#a32232] [font-size:13px]" role="alert">Out of stock</p>
-                  ) : qty > product!.stock ? (
+                  <p className="muted [color:#999]">
+                    {product!.color}
+                    {size ? ` · Size ${size}` : ""}
+                  </p>
+                  {missingSize({ id, qty, size, product }) && (
                     <p className="stock-error [color:#a32232] [font-size:13px]" role="alert">
-                      Only {product!.stock} left. Reduce quantity to continue.
+                      No size chosen.{" "}
+                      <Link className="underline" href={`/product/${id}`}>
+                        Choose a size
+                      </Link>{" "}
+                      and remove this line.
                     </p>
-                  ) : product!.stock <= 5 ? (
-                    <p className="stock-note [color:#786565] [font-size:13px]">Only {product!.stock} left</p>
-                  ) : null}
+                  )}
+                  {(() => {
+                    const available = lineAvailable({ id, qty, size, product });
+                    const sizeNote = size ? ` in size ${size}` : "";
+                    if (available <= 0) {
+                      return <p className="stock-error [color:#a32232] [font-size:13px]" role="alert">Out of stock{sizeNote}</p>;
+                    }
+                    if (qty > available) {
+                      return (
+                        <p className="stock-error [color:#a32232] [font-size:13px]" role="alert">
+                          Only {available} left{sizeNote}. Reduce quantity to continue.
+                        </p>
+                      );
+                    }
+                    if (available <= 3) {
+                      return <p className="stock-note [color:#786565] [font-size:13px]">Only {available} left{sizeNote}</p>;
+                    }
+                    return null;
+                  })()}
                   <div className="qty [display:flex] [gap:12px] [align-items:center] [&_button]:[border:1px_solid_#ddd] [&_button]:[padding:6px_12px]">
                     <button
                       aria-label={`Decrease ${product!.name} quantity`}
-                      onClick={() => quantity(id, qty - 1)}
+                      onClick={() => quantity(id, qty - 1, size)}
                     >
                       −
                     </button>
                     {qty}
                     <button
                       aria-label={`Increase ${product!.name} quantity`}
-                      disabled={qty >= product!.stock}
-                      onClick={() => quantity(id, qty + 1)}
+                      disabled={qty >= lineAvailable({ id, qty, size, product })}
+                      onClick={() => quantity(id, qty + 1, size)}
                     >
                       +
                     </button>
                   </div>
                   <button
                     className="text-xs underline mt-3"
-                    onClick={() => remove(id)}
+                    onClick={() => remove(id, size)}
                   >
                     Remove
                   </button>

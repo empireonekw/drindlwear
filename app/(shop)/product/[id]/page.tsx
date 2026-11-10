@@ -1,153 +1,387 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Heart, ShieldCheck, Truck } from "lucide-react";
+import { ChevronDown, Heart, Ruler, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 
+import { ProductGallery } from "@/components/product-gallery";
 import { ProductGrid } from "@/components/product";
+import { SizeGuide, SizeGuideHandle } from "@/components/size-guide";
 import { useStore } from "@/components/store";
-import { money } from "@/lib/data";
+import {
+  audiences,
+  availableStock,
+  colorSwatches,
+  money,
+  Product,
+  productSizes,
+  requiresSize,
+} from "@/lib/data";
+import { completeTheLook, similarProducts } from "@/lib/recommendations";
 
-const sizes = ["32", "34", "36", "38", "40", "42", "44"];
+const primaryButton =
+  "inline-flex items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#9b3345] disabled:cursor-not-allowed disabled:bg-[#786565]";
 
-export default function Detail() {
+const sectionTitle =
+  "m-0 mb-3 text-center font-serif text-[34px] font-normal tracking-[1px] text-[#781d2d] max-[520px]:text-[29px]";
+
+export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
-  const { products, add, toggleWish, wishlist } = useStore();
+  const { products } = useStore();
   const product = products.find((item) => item.id === Number(id));
-  const [size, setSize] = useState("38");
-  const [quantity, setQuantity] = useState(1);
-  const [added, setAdded] = useState(false);
-  const [stockMessage, setStockMessage] = useState("");
 
   if (!product) {
-    return <div className="empty [text-align:center] [padding:100px_0] [color:#777]">Product not found.</div>;
+    return <div className="py-24 text-center text-[#777]">Product not found.</div>;
   }
+  // `key` resets size, quantity and gallery when moving to another product.
+  return <ProductView key={product.id} product={product} />;
+}
 
-  const productId = product.id;
+function ProductView({ product }: { product: Product }) {
+  const { products, add, toggleWish, wishlist } = useStore();
+  const [size, setSize] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
+  const [message, setMessage] = useState("");
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const sizeGuide = useRef<SizeGuideHandle>(null);
+  const sizeSection = useRef<HTMLDivElement>(null);
+  const buyButton = useRef<HTMLButtonElement>(null);
+
+  const needsSize = requiresSize(product.category);
+  const outOfStock = product.stock <= 0;
+  const sizeLeft = needsSize && size ? availableStock(product, size) : null;
+  const maxQuantity = Math.max(1, Math.min(sizeLeft ?? product.stock, 50));
+  const wished = wishlist.includes(product.id);
+  const discount = product.oldPrice
+    ? Math.round((1 - product.price / product.oldPrice) * 100)
+    : 0;
+  const audience = audiences.find((entry) => entry.value === product.audience);
+  const categorySlug = product.category.toLowerCase().replaceAll(" ", "-");
+  const look = completeTheLook(product, products);
+  const similar = similarProducts(product, products, look);
+
+  // Mobile: show the sticky bar once the main "Add to cart" button scrolls away.
+  useEffect(() => {
+    const target = buyButton.current;
+    if (!target) return;
+    const observer = new IntersectionObserver(([entry]) => setShowStickyBar(!entry.isIntersecting));
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
 
   function addToCart() {
-    if (!add(productId, quantity)) {
-      setStockMessage("Requested quantity exceeds available stock.");
+    if (needsSize && !size) {
+      setMessage("Please choose a size first.");
+      sizeSection.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-    setStockMessage("");
+    if (!add(product.id, quantity, needsSize ? size : undefined)) {
+      setMessage(
+        sizeLeft !== null
+          ? `Only ${sizeLeft} left in size ${size}, including what's already in your cart.`
+          : "Requested quantity exceeds available stock.",
+      );
+      setAdded(false);
+      return;
+    }
+    setMessage("");
     setAdded(true);
   }
 
-  const outOfStock = product.stock <= 0;
+  const details = [
+    product.lengthCm ? ["Length", `${product.lengthCm} cm (waist to hem)`] : null,
+    product.material ? ["Material", product.material] : null,
+    product.includes ? ["What's included", product.includes] : null,
+  ].filter((row): row is [string, string] => row !== null);
+
+  const availability = outOfStock
+    ? { text: "Out of stock", tone: "text-[#a32232]" }
+    : sizeLeft !== null
+      ? sizeLeft <= 3
+        ? { text: `Only ${sizeLeft} left in size ${size}`, tone: "text-[#a32232]" }
+        : { text: `In stock in size ${size}`, tone: "text-[#1f6b44]" }
+      : needsSize
+        ? { text: "Choose a size to see availability", tone: "text-[#786565]" }
+        : product.stock <= 5
+          ? { text: `Only ${product.stock} left`, tone: "text-[#a32232]" }
+          : { text: "In stock", tone: "text-[#1f6b44]" };
+
+  const buttonLabel = outOfStock
+    ? "Out of stock"
+    : needsSize && !size
+      ? "Select a size"
+      : `Add to cart · ${money(product.price * quantity)}`;
 
   return (
-    <div className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]">
-      <div className="breadcrumb [font-size:11px] [color:#888] [padding:24px_0]">
-        Home / {product.category} / {product.name}
-      </div>
-      <div className="product-detail [display:grid] [grid-template-columns:minmax(0,_1.15fr)_minmax(0,_0.85fr)] [gap:7%] [padding:35px_0_80px] max-[850px]:[grid-template-columns:minmax(0,_1fr)] [&_>_*]:[min-width:0] max-[850px]:[&_>_*]:[min-width:0]">
-        <div>
-          <img
-            className="detail-image [width:100%] [height:700px] [object-fit:cover] [background:#eee] max-[850px]:[height:auto] [max-width:100%] max-[850px]:[aspect-ratio:3_/_4] max-[850px]:[object-fit:cover] motion-safe:[transition:transform_650ms_cubic-bezier(0.2,_0.7,_0.2,_1)] motion-safe:[&:hover]:[transform:scale(1.045)]"
-            src={product.image}
-            alt={product.name}
-          />
-        </div>
+    <div className="mx-auto max-w-[1360px] px-8 max-[520px]:px-4 max-[850px]:pb-24">
+      <nav aria-label="Breadcrumb" className="py-6 text-[12px] text-[#786565]">
+        <ol className="m-0 flex list-none flex-wrap gap-2 p-0">
+          <li><Link href="/" className="hover:text-[#781d2d]">Home</Link></li>
+          <li aria-hidden="true">/</li>
+          {audience && product.audience !== "unisex" && (
+            <>
+              <li>
+                <Link href={`/collections/${product.audience}`} className="hover:text-[#781d2d]">
+                  {audience.label}
+                </Link>
+              </li>
+              <li aria-hidden="true">/</li>
+            </>
+          )}
+          <li>
+            <Link href={`/collections/${categorySlug}`} className="hover:text-[#781d2d]">
+              {product.category}
+            </Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" className="text-[#211c1d]">{product.name}</li>
+        </ol>
+      </nav>
 
-        <div className="detail-info [padding-top:35px] [&_h1]:[font:42px_Georgia,serif] [&_p]:[line-height:1.9] [&_p]:[color:#666] [&_h1]:[color:#781d2d] max-[1100px]:[&_.size-options]:[flex-wrap:wrap] max-[1100px]:[&_.size-options]:[gap:7px] max-[1100px]:[&_.size-options_button]:[padding:10px_12px] max-[1100px]:[&_.row-line]:[flex-wrap:wrap] max-[1100px]:[&_.row-line]:[row-gap:8px] max-[1100px]:[&_.row-line_>_:last-child]:[margin-left:auto]">
-          <span className="text-xs tracking-widest text-gray-500">
-            DIRNDL WEAR DIRNDL
-          </span>
-          <h1>{product.name}</h1>
-          <p className="text-xl font-bold">
-            {money(product.price)}{" "}
+      <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-[6%] pb-20 max-[850px]:grid-cols-1 max-[850px]:gap-8">
+        <ProductGallery
+          images={[product.image, ...(product.images ?? [])]}
+          name={product.name}
+          badge={discount > 0 ? `−${discount}%` : undefined}
+        />
+
+        <div className="min-w-0">
+          <p className="m-0 text-[11px] uppercase tracking-[2px] text-[#786565]">
+            Dirndl Wear · {product.category}
+          </p>
+          <h1 className="m-0 mt-2 font-serif text-[40px] font-normal leading-tight text-[#781d2d] max-[520px]:text-[32px]">
+            {product.name}
+          </h1>
+
+          <div className="mt-4 flex flex-wrap items-baseline gap-3">
+            <strong className={`text-[22px] ${discount ? "text-[#a32232]" : ""}`}>{money(product.price)}</strong>
             {product.oldPrice && (
-              <del className="text-sm text-gray-400">
-                {money(product.oldPrice)}
-              </del>
+              <>
+                <del className="text-[15px] text-[#8a7c7c]">{money(product.oldPrice)}</del>
+                <span className="bg-[#f3e6e3] px-2 py-0.5 text-[12px] font-semibold text-[#a32232]">
+                  Save {discount}%
+                </span>
+              </>
+            )}
+          </div>
+          <p className="m-0 mt-1 text-[12px] text-[#786565]">Includes VAT; delivery calculated at checkout</p>
+
+          {/* Colour */}
+          <p className="mb-0 mt-6 flex items-center gap-2 text-sm">
+            <strong>Colour:</strong> {product.color}
+            {product.colorFamily && (
+              <span
+                aria-hidden="true"
+                className="inline-block h-5 w-5 rounded-full border border-[#d8c9c4]"
+                style={{ background: colorSwatches[product.colorFamily] }}
+              />
             )}
           </p>
-          <p>Includes VAT; shipping calculated at checkout</p>
-          <p>{product.description}</p>
-          {outOfStock ? (
-            <p className="stock-error [color:#a32232] [font-size:13px]" role="status">Out of stock</p>
-          ) : product.stock <= 5 ? (
-            <p className="stock-note [color:#786565] [font-size:13px]" role="status">Only {product.stock} left in stock</p>
-          ) : (
-            <p className="stock-note [color:#786565] [font-size:13px]" role="status">{product.stock} in stock</p>
+
+          {/* Size */}
+          {needsSize && (
+            <div ref={sizeSection} className="mt-6">
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <p id="size-label" className="m-0 text-sm">
+                  <strong>Size (EU):</strong> {size || "choose a size"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => sizeGuide.current?.open()}
+                  className="inline-flex items-center gap-1.5 text-sm underline underline-offset-4 hover:text-[#781d2d]"
+                >
+                  <Ruler size={16} aria-hidden="true" /> Size guide
+                </button>
+              </div>
+              <div role="group" aria-labelledby="size-label" className="grid grid-cols-7 gap-2 max-[420px]:grid-cols-4">
+                {productSizes.map((option) => {
+                  const left = availableStock(product, option);
+                  const soldOut = left <= 0;
+                  const selected = size === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={selected}
+                      disabled={soldOut}
+                      aria-label={soldOut ? `Size ${option}, sold out` : left <= 3 ? `Size ${option}, only ${left} left` : `Size ${option}`}
+                      onClick={() => {
+                        setSize(option);
+                        setQuantity(1);
+                        setAdded(false);
+                        setMessage("");
+                      }}
+                      className={
+                        "relative h-12 border text-[15px] transition " +
+                        (soldOut
+                          ? "cursor-not-allowed border-dashed border-[#d8c9c4] bg-[#f7f2f0] text-[#a99c9c] line-through"
+                          : selected
+                            ? "border-[#781d2d] bg-[#781d2d] text-white"
+                            : "border-[#cfc3bf] bg-white hover:border-[#211c1d]")
+                      }
+                    >
+                      {option}
+                      {!soldOut && left <= 3 && (
+                        <span aria-hidden="true" className={`absolute right-1 top-1 h-1.5 w-1.5 rounded-full ${selected ? "bg-white" : "bg-[#a32232]"}`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {product.fit && (
+                <p className="m-0 mt-3 bg-[#f3e6e3] px-4 py-2.5 text-sm">
+                  <strong>Fit:</strong> {product.fit}
+                </p>
+              )}
+            </div>
           )}
-          <p>
-            <strong>Color:</strong> {product.color}
-          </p>
-          <p>
-            <strong>Select Size</strong>
-          </p>
 
-          <div className="size-options [display:flex] [gap:10px] [margin:12px_0_25px] [&_button]:[border:1px_solid_#ccc] [&_button]:[padding:12px_16px] [&_button.active]:[background:#781d2d] [&_button.active]:[color:white] max-[520px]:[flex-wrap:wrap] max-[520px]:[gap:7px] max-[520px]:[&_button]:[padding:10px_12px]">
-            {sizes.map((option) => (
-              <button
-                className={size === option ? "active" : ""}
-                onClick={() => setSize(option)}
-                key={option}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
+          <p role="status" className={`m-0 mt-4 text-sm ${availability.tone}`}>{availability.text}</p>
 
-          <div className="flex gap-3 items-center">
-            <div className="qty [display:flex] [gap:12px] [align-items:center] [&_button]:[border:1px_solid_#ddd] [&_button]:[padding:6px_12px]">
+          {/* Quantity, add to cart, wishlist */}
+          <div className="mt-4 flex flex-wrap items-stretch gap-3">
+            <div className="flex items-center border border-[#cfc3bf] bg-white">
               <button
+                type="button"
+                aria-label="Decrease quantity"
                 disabled={quantity <= 1}
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="h-[52px] w-11 text-lg disabled:text-[#c9bdb9]"
               >
                 −
               </button>
-              {quantity}
+              <span aria-live="polite" className="min-w-7 text-center">{quantity}</span>
               <button
-                disabled={quantity >= Math.min(product.stock, 50)}
+                type="button"
+                aria-label="Increase quantity"
+                disabled={quantity >= maxQuantity}
                 onClick={() => setQuantity(quantity + 1)}
+                className="h-[52px] w-11 text-lg disabled:text-[#c9bdb9]"
               >
                 +
               </button>
             </div>
             <button
-              className="btn flex-1 [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#9b3345] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]"
+              ref={buyButton}
+              type="button"
               onClick={addToCart}
               disabled={outOfStock}
+              className={`${primaryButton} min-w-[200px] flex-1`}
             >
-              {outOfStock ? "OUT OF STOCK" : added ? "ADDED ✓" : "ADD TO CART"}
+              {buttonLabel}
             </button>
             <button
+              type="button"
               onClick={() => toggleWish(product.id)}
-              aria-label="Wishlist"
+              aria-pressed={wished}
+              aria-label={wished ? "Remove from wishlist" : "Save to wishlist"}
+              className="grid h-[54px] w-[54px] place-items-center border border-[#cfc3bf] bg-white text-[#781d2d] hover:border-[#781d2d]"
             >
-              <Heart
-                fill={wishlist.includes(product.id) ? "#ad786e" : "none"}
-              />
+              <Heart size={22} fill={wished ? "currentColor" : "none"} aria-hidden="true" />
             </button>
           </div>
-          {stockMessage && <p className="stock-error [color:#a32232] [font-size:13px]" role="alert">{stockMessage}</p>}
 
-          <div className="row-line [display:flex] [align-items:center] [justify-content:space-between] [gap:15px] [padding:20px_0] [border-bottom:1px_solid_#eee] max-[520px]:[flex-wrap:wrap] max-[520px]:[row-gap:8px] max-[520px]:[&_>_:last-child]:[margin-left:auto]">
-            <span className="flex gap-3">
-              <Truck size={19} /> Shipping &amp; Delivery
-            </span>
-            <span>2–5 business days*</span>
+          {message && <p role="alert" className="m-0 mt-3 text-sm text-[#a32232]">{message}</p>}
+          {added && !message && (
+            <p role="status" className="m-0 mt-3 flex flex-wrap items-center gap-x-3 text-sm text-[#1f6b44]">
+              Added to your cart.
+              <Link href="/cart" className="font-semibold text-[#781d2d] underline underline-offset-4">
+                View cart
+              </Link>
+            </p>
+          )}
+
+          {/* Delivery promises */}
+          <ul className="m-0 mt-6 grid list-none gap-3 border-y border-[#eee] p-0 py-5 text-sm">
+            <li className="flex items-center gap-3"><Truck size={19} className="text-[#781d2d]" aria-hidden="true" /> Delivery in 2–5 business days*</li>
+            <li className="flex items-center gap-3"><RotateCcw size={19} className="text-[#781d2d]" aria-hidden="true" /> Easy returns*</li>
+            <li className="flex items-center gap-3"><ShieldCheck size={19} className="text-[#781d2d]" aria-hidden="true" /> Secure shopping</li>
+          </ul>
+          <p className="m-0 mt-2 text-[11px] text-[#8a7c7c]">*Demo information; not a real store or shipping promise.</p>
+
+          {/* More information */}
+          <div className="mt-6 divide-y divide-[#eee] border-b border-[#eee]">
+            <details open className="group py-4">
+              <summary className="flex cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden justify-between text-sm font-semibold uppercase tracking-[1.2px]">
+                Details
+                <ChevronDown size={18} aria-hidden="true" className="text-[#786565] transition group-open:rotate-180" />
+              </summary>
+              <p className="mb-0 mt-3 text-sm leading-7 text-[#5e5050]">{product.description}</p>
+              {details.length > 0 && (
+                <dl className="mb-0 mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
+                  {details.map(([label, value]) => (
+                    <div key={label} className="contents">
+                      <dt className="font-semibold">{label}</dt>
+                      <dd className="m-0 text-[#5e5050]">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </details>
+            {needsSize && (
+              <details className="group py-4">
+                <summary className="flex cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden justify-between text-sm font-semibold uppercase tracking-[1.2px]">
+                  Size &amp; fit
+                  <ChevronDown size={18} aria-hidden="true" className="text-[#786565] transition group-open:rotate-180" />
+                </summary>
+                <p className="mb-0 mt-3 text-sm leading-7 text-[#5e5050]">
+                  {product.fit ?? "Fits true to size."}
+                  {product.lengthCm ? ` Length ${product.lengthCm} cm from waist to hem.` : ""}{" "}
+                  <button type="button" onClick={() => sizeGuide.current?.open()} className="underline underline-offset-4 hover:text-[#781d2d]">
+                    Open the size guide
+                  </button>
+                </p>
+              </details>
+            )}
+            <details className="group py-4">
+              <summary className="flex cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden justify-between text-sm font-semibold uppercase tracking-[1.2px]">
+                Delivery &amp; returns
+                <ChevronDown size={18} aria-hidden="true" className="text-[#786565] transition group-open:rotate-180" />
+              </summary>
+              <p className="mb-0 mt-3 text-sm leading-7 text-[#5e5050]">
+                See{" "}
+                <Link href="/pages/shipping-&-delivery" className="underline underline-offset-4">shipping &amp; delivery</Link>{" "}
+                and{" "}
+                <Link href="/pages/returns" className="underline underline-offset-4">returns</Link>{" "}
+                for full details.
+              </p>
+            </details>
           </div>
-          <div className="row-line [display:flex] [align-items:center] [justify-content:space-between] [gap:15px] [padding:20px_0] [border-bottom:1px_solid_#eee] max-[520px]:[flex-wrap:wrap] max-[520px]:[row-gap:8px] max-[520px]:[&_>_:last-child]:[margin-left:auto]">
-            <span className="flex gap-3">
-              <ShieldCheck size={19} /> Secure Shopping
-            </span>
-          </div>
-          <p className="text-xs">
-            *Demo information; not a real store or shipping promise.
-          </p>
         </div>
       </div>
 
-      <h2 className="section-title [text-align:center] [font:normal_34px_Georgia,serif] [letter-spacing:1px] [margin:0_0_14px] max-[520px]:[font-size:29px] [color:#781d2d]">You May Also Like</h2>
-      <div className="pb-20">
-        <ProductGrid
-          items={products.filter((item) => item.id !== product.id).slice(0, 4)}
-        />
-      </div>
+      {look.length > 0 && (
+        <section aria-labelledby="look-title" className="pb-16">
+          <h2 id="look-title" className={sectionTitle}>Complete the look</h2>
+          <p className="mb-9 text-center text-[13px] tracking-[1px] text-[#777]">PIECES THAT GO WITH IT</p>
+          <ProductGrid items={look} />
+        </section>
+      )}
+
+      {similar.length > 0 && (
+        <section aria-labelledby="similar-title" className="pb-20">
+          <h2 id="similar-title" className={sectionTitle}>You may also like</h2>
+          <p className="mb-9 text-center text-[13px] tracking-[1px] text-[#777]">MORE LIKE THIS</p>
+          <ProductGrid items={similar} />
+        </section>
+      )}
+
+      {/* Mobile sticky bar, shown once the main button has scrolled away */}
+      {showStickyBar && !outOfStock && (
+        <div className="fixed inset-x-0 bottom-0 z-30 hidden items-center gap-3 border-t border-[#eadfdb] bg-white px-4 py-3 shadow-[0_-6px_20px_rgb(33_28_29/8%)] max-[850px]:flex">
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="m-0 truncate text-[13px]">{product.name}{size ? ` · ${size}` : ""}</p>
+            <strong className="text-[15px]">{money(product.price)}</strong>
+          </div>
+          <button type="button" onClick={addToCart} className={`${primaryButton} px-5 py-3.5`}>
+            {needsSize && !size ? "Select size" : "Add to cart"}
+          </button>
+        </div>
+      )}
+
+      <SizeGuide ref={sizeGuide} product={product} />
     </div>
   );
 }

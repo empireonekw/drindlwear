@@ -1,90 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
-import { notifyDataChanged, useAutoRefresh } from "@/lib/use-auto-refresh";
+import { useStore } from "@/components/store";
 
 export default function Content() {
-  const [headline, setHeadline] = useState("Moments of Tradition");
+  const store = useStore();
+  const [headline, setHeadline] = useState(store.headline);
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const edited = useRef(false);
 
-  const loadContent = useCallback(async () => {
-    if (edited.current) return;
-    try {
-      const response = await fetch("/api/content", { cache: "no-store" });
-      const payload: unknown = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          typeof payload === "object" &&
-            payload !== null &&
-            "error" in payload &&
-            typeof payload.error === "string"
-            ? payload.error
-            : "Could not load homepage content.",
-        );
-      }
-      if (
-        typeof payload === "object" &&
-        payload !== null &&
-        "content" in payload &&
-        typeof payload.content === "object" &&
-        payload.content !== null &&
-        "headline" in payload.content &&
-        typeof payload.content.headline === "string"
-      ) {
-        setHeadline(payload.content.headline);
-      }
-      setError("");
-    } catch (loadError: unknown) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Could not load homepage content.",
-      );
-    }
-  }, []);
-
-  useAutoRefresh(loadContent);
-  useEffect(() => {
-    void loadContent();
-  }, [loadContent]);
-
-  async function saveContent() {
-    setError("");
+  function saveContent() {
     setNote("");
-    setSaving(true);
-    try {
-      const response = await fetch("/api/content", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ headline }),
-      });
-      const payload: unknown = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          typeof payload === "object" &&
-            payload !== null &&
-            "error" in payload &&
-            typeof payload.error === "string"
-            ? payload.error
-            : "Could not save homepage content.",
-        );
-      }
-      edited.current = false;
-      setNote("Headline saved.");
-      notifyDataChanged();
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Could not save homepage content.",
-      );
-    } finally {
-      setSaving(false);
+    if (!headline.trim()) {
+      setError("Enter a headline.");
+      return;
     }
+    setError("");
+    store.setHeadline(headline.trim());
+    setNote("Headline saved in this browser.");
   }
 
   return (
@@ -99,17 +33,13 @@ export default function Content() {
         <input
           className="field w-full [padding:12px] [border:1px_solid_#ddd] [background:white]"
           value={headline}
-          onChange={(event) => {
-            edited.current = true;
-            setHeadline(event.target.value);
-          }}
+          onChange={(event) => setHeadline(event.target.value)}
         />
         <button
           className="btn mt-5 [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#9b3345] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]"
-          disabled={saving}
           onClick={saveContent}
         >
-          {saving ? "SAVING..." : "SAVE HEADLINE"}
+          SAVE HEADLINE
         </button>
         {note && <p className="mt-4" role="status">{note}</p>}
       </div>
