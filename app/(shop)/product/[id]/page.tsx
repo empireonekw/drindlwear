@@ -23,7 +23,7 @@ import { setPricing } from "@/lib/sets";
 import { promiseText, storePolicy } from "@/lib/store-policy";
 
 const primaryButton =
-  "inline-flex items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#9b3345] disabled:cursor-not-allowed disabled:bg-[#786565]";
+  "inline-flex items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#5e1622] disabled:cursor-not-allowed disabled:bg-[#786565]";
 
 const sectionTitle =
   "m-0 mb-3 text-center font-serif text-[34px] font-normal tracking-[1px] text-[#781d2d] max-[520px]:text-[29px]";
@@ -34,7 +34,7 @@ export default function ProductPage() {
   const product = products.find((item) => item.id === Number(id));
 
   if (!product) {
-    return <div className="py-24 text-center text-[#777]">Product not found.</div>;
+    return <div className="py-24 text-center text-[#786565]">Product not found.</div>;
   }
   // `key` resets size, quantity and gallery when moving to another product.
   return <ProductView key={product.id} product={product} />;
@@ -103,15 +103,15 @@ function ProductView({ product }: { product: Product }) {
   ].filter((row): row is [string, string] => row !== null);
 
   const availability = outOfStock
-    ? { text: "Out of stock", tone: "text-[#a32232]" }
+    ? { text: "Out of stock", tone: "text-[#781d2d]" }
     : sizeLeft !== null
       ? sizeLeft <= 3
-        ? { text: `Only ${sizeLeft} left in size ${size}`, tone: "text-[#a32232]" }
+        ? { text: `Only ${sizeLeft} left in size ${size}`, tone: "text-[#781d2d]" }
         : { text: `In stock in size ${size}`, tone: "text-[#1f6b44]" }
       : needsSize
         ? { text: "Choose a size to see availability", tone: "text-[#786565]" }
         : product.stock <= 5
-          ? { text: `Only ${product.stock} left`, tone: "text-[#a32232]" }
+          ? { text: `Only ${product.stock} left`, tone: "text-[#781d2d]" }
           : { text: "In stock", tone: "text-[#1f6b44]" };
 
   const buttonLabel = outOfStock
@@ -162,11 +162,11 @@ function ProductView({ product }: { product: Product }) {
           </h1>
 
           <div className="mt-4 flex flex-wrap items-baseline gap-3">
-            <strong className={`text-[22px] ${discount ? "text-[#a32232]" : ""}`}>{money(product.price)}</strong>
+            <strong className={`text-[22px] ${discount ? "text-[#781d2d]" : ""}`}>{money(product.price)}</strong>
             {product.oldPrice && (
               <>
-                <del className="text-[15px] text-[#8a7c7c]">{money(product.oldPrice)}</del>
-                <span className="bg-[#f3e6e3] px-2 py-0.5 text-[12px] font-semibold text-[#a32232]">
+                <del className="text-[15px] text-[#786565]">{money(product.oldPrice)}</del>
+                <span className="bg-[#f3e6e3] px-2 py-0.5 text-[12px] font-semibold text-[#781d2d]">
                   Save {discount}%
                 </span>
               </>
@@ -222,7 +222,7 @@ function ProductView({ product }: { product: Product }) {
                       className={
                         "relative h-12 border text-[15px] transition " +
                         (soldOut
-                          ? "cursor-not-allowed border-dashed border-[#d8c9c4] bg-[#f7f2f0] text-[#a99c9c] line-through"
+                          ? "cursor-not-allowed border-dashed border-[#d8c9c4] bg-[#fbf5f2] text-[#786565] line-through"
                           : selected
                             ? "border-[#781d2d] bg-[#781d2d] text-white"
                             : "border-[#cfc3bf] bg-white hover:border-[#211c1d]")
@@ -230,7 +230,7 @@ function ProductView({ product }: { product: Product }) {
                     >
                       {option}
                       {!soldOut && left <= 3 && (
-                        <span aria-hidden="true" className={`absolute right-1 top-1 h-1.5 w-1.5 rounded-full ${selected ? "bg-white" : "bg-[#a32232]"}`} />
+                        <span aria-hidden="true" className={`absolute right-1 top-1 h-1.5 w-1.5 rounded-full ${selected ? "bg-white" : "bg-[#781d2d]"}`} />
                       )}
                     </button>
                   );
@@ -289,7 +289,7 @@ function ProductView({ product }: { product: Product }) {
             </button>
           </div>
 
-          {message && <p role="alert" className="m-0 mt-3 text-sm text-[#a32232]">{message}</p>}
+          {message && <p role="alert" className="m-0 mt-3 text-sm text-[#781d2d]">{message}</p>}
           {added && !message && (
             <p role="status" className="m-0 mt-3 flex flex-wrap items-center gap-x-3 text-sm text-[#1f6b44]">
               Added to your cart.
@@ -314,7 +314,7 @@ function ProductView({ product }: { product: Product }) {
                       </span>
                       <span className="min-w-0 flex-1 text-sm">
                         <span className="block font-semibold group-hover:text-[#781d2d] group-hover:underline">{set.name}</span>
-                        <span className="text-[#5e5050]">
+                        <span className="text-[#786565]">
                           {pricing.pieces.length} pieces for {money(pricing.price)}{" "}
                           <span className="text-[#1f6b44]">· save {money(pricing.saving)}</span>
                         </span>
@@ -327,7 +327,7 @@ function ProductView({ product }: { product: Product }) {
           )}
 
           {/* Delivery promises */}
-          <ul className="m-0 mt-6 grid list-none gap-3 border-y border-[#eee] p-0 py-5 text-sm">
+          <ul className="m-0 mt-6 grid list-none gap-3 border-y border-[#eadfdc] p-0 py-5 text-sm">
             <li className="flex items-center gap-3">
               <Truck size={19} className="shrink-0 text-[#781d2d]" aria-hidden="true" />
               <span>
@@ -348,19 +348,19 @@ function ProductView({ product }: { product: Product }) {
           </ul>
 
           {/* More information */}
-          <div className="mt-6 divide-y divide-[#eee] border-b border-[#eee]">
+          <div className="mt-6 divide-y divide-[#eadfdc] border-b border-[#eadfdc]">
             <details open className="group py-4">
               <summary className="flex cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden justify-between text-sm font-semibold uppercase tracking-[1.2px]">
                 Details
                 <ChevronDown size={18} aria-hidden="true" className="text-[#786565] transition group-open:rotate-180" />
               </summary>
-              <p className="mb-0 mt-3 text-sm leading-7 text-[#5e5050]">{product.description}</p>
+              <p className="mb-0 mt-3 text-sm leading-7 text-[#786565]">{product.description}</p>
               {details.length > 0 && (
                 <dl className="mb-0 mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
                   {details.map(([label, value]) => (
                     <div key={label} className="contents">
                       <dt className="font-semibold">{label}</dt>
-                      <dd className="m-0 text-[#5e5050]">{value}</dd>
+                      <dd className="m-0 text-[#786565]">{value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -372,7 +372,7 @@ function ProductView({ product }: { product: Product }) {
                   Size &amp; fit
                   <ChevronDown size={18} aria-hidden="true" className="text-[#786565] transition group-open:rotate-180" />
                 </summary>
-                <p className="mb-0 mt-3 text-sm leading-7 text-[#5e5050]">
+                <p className="mb-0 mt-3 text-sm leading-7 text-[#786565]">
                   {product.fit ?? "Fits true to size."}
                   {product.lengthCm ? ` Length ${product.lengthCm} cm from waist to hem.` : ""}{" "}
                   <button type="button" onClick={() => sizeGuide.current?.open()} className="underline underline-offset-4 hover:text-[#781d2d]">
@@ -386,12 +386,12 @@ function ProductView({ product }: { product: Product }) {
                 Delivery &amp; returns
                 <ChevronDown size={18} aria-hidden="true" className="text-[#786565] transition group-open:rotate-180" />
               </summary>
-              <ul className="m-0 mt-3 list-disc pl-5 text-sm leading-7 text-[#5e5050]">
+              <ul className="m-0 mt-3 list-disc pl-5 text-sm leading-7 text-[#786565]">
                 <li>{promiseText.deliveryTime} across Pakistan.</li>
                 <li>{promiseText.freeDelivery}; {promiseText.deliveryFee}.</li>
                 <li>{promiseText.exchange}, counted from the day it arrives.</li>
               </ul>
-              <p className="mb-0 mt-2 text-sm leading-7 text-[#5e5050]">
+              <p className="mb-0 mt-2 text-sm leading-7 text-[#786565]">
                 See{" "}
                 <Link href="/pages/shipping-&-delivery" className="underline underline-offset-4">shipping &amp; delivery</Link>{" "}
                 and{" "}
@@ -406,7 +406,7 @@ function ProductView({ product }: { product: Product }) {
       {look.length > 0 && (
         <section aria-labelledby="look-title" className="pb-16">
           <h2 id="look-title" className={sectionTitle}>Complete the look</h2>
-          <p className="mb-9 text-center text-[13px] tracking-[1px] text-[#777]">PIECES THAT GO WITH IT</p>
+          <p className="mb-9 text-center text-[13px] tracking-[1px] text-[#786565]">PIECES THAT GO WITH IT</p>
           <ProductGrid items={look} />
         </section>
       )}
@@ -414,7 +414,7 @@ function ProductView({ product }: { product: Product }) {
       {similar.length > 0 && (
         <section aria-labelledby="similar-title" className="pb-20">
           <h2 id="similar-title" className={sectionTitle}>You may also like</h2>
-          <p className="mb-9 text-center text-[13px] tracking-[1px] text-[#777]">MORE LIKE THIS</p>
+          <p className="mb-9 text-center text-[13px] tracking-[1px] text-[#786565]">MORE LIKE THIS</p>
           <ProductGrid items={similar} />
         </section>
       )}

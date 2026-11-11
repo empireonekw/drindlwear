@@ -50,7 +50,7 @@ export default function Account() {
 
   return (
     <div className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]">
-      <h1 className="page-heading [text-align:center] [font:42px_Georgia,serif] [margin:35px_0_14px] [color:#781d2d]">My Account</h1>
+      <h1 className="page-heading [text-align:center] [font:500_42px_var(--font-serif)] [margin:35px_0_14px] [color:#781d2d]">My Account</h1>
         <section>
           <div className="mx-auto mb-10 mt-8 flex max-w-[1100px] flex-wrap items-center gap-6 bg-white p-6 shadow-[0_12px_36px_rgb(74_20_32_/_8%)] sm:p-8">
             <div
@@ -79,7 +79,7 @@ export default function Account() {
             {user.role === "admin" && (
               <Link
                 href="/admin"
-                className="flex items-center gap-2 bg-[#781d2d] px-6 py-3 text-[11px] font-semibold uppercase tracking-[1.8px] text-white transition-colors hover:bg-[#9b3345]"
+                className="flex items-center gap-2 bg-[#781d2d] px-6 py-3 text-[11px] font-semibold uppercase tracking-[1.8px] text-white transition-colors hover:bg-[#5e1622]"
               >
                 <LayoutDashboard size={15} aria-hidden="true" /> Admin dashboard
               </Link>
@@ -94,9 +94,9 @@ export default function Account() {
               {signingOut ? "Signing out…" : "Sign out"}
             </button>
           </div>
-          <h2 className="page-heading [text-align:center] [font:42px_Georgia,serif] [margin:35px_0_14px] [color:#781d2d]">My Orders</h2>
+          <h2 className="page-heading [text-align:center] [font:500_42px_var(--font-serif)] [margin:35px_0_14px] [color:#781d2d]">My Orders</h2>
           {myOrders.length === 0 ? (
-            <div className="empty [text-align:center] [padding:100px_0] [color:#777]">
+            <div className="empty [text-align:center] [padding:100px_0] [color:#786565]">
               <p>You have not placed any orders yet.</p>
               <p className="mt-2 text-sm">
                 Orders you place with {user.email} appear here.
@@ -104,8 +104,8 @@ export default function Account() {
             </div>
           ) : (
             myOrders.map((order) => (
-              <article className="admin-card [background:white] [border:1px_solid_#eee] [border-radius:8px] [padding:25px] [margin:25px_0] [overflow-x:auto] [min-width:0] motion-safe:[transition:transform_240ms_ease,_box-shadow_240ms_ease] motion-safe:[&:hover]:[transform:translateY(-3px)] motion-safe:[&:hover]:[box-shadow:0_12px_28px_rgb(33_28_29_/_8%)]" key={order.id}>
-                <div className="admin-head [display:flex] [justify-content:space-between] [align-items:center] [margin-bottom:30px] [&_h1]:[font:32px_Georgia,serif] max-[520px]:[flex-wrap:wrap] max-[520px]:[gap:12px] max-[520px]:[&_h1]:[font-size:27px]">
+              <article className="admin-card [background:white] [border:1px_solid_#eadfdc] [border-radius:8px] [padding:25px] [margin:25px_0] [overflow-x:auto] [min-width:0] motion-safe:[transition:transform_240ms_ease,_box-shadow_240ms_ease] motion-safe:[&:hover]:[transform:translateY(-3px)] motion-safe:[&:hover]:[box-shadow:0_12px_28px_rgb(33_28_29_/_8%)]" key={order.id}>
+                <div className="admin-head [display:flex] [justify-content:space-between] [align-items:center] [margin-bottom:30px] [&_h1]:[font:500_32px_var(--font-serif)] max-[520px]:[flex-wrap:wrap] max-[520px]:[gap:12px] max-[520px]:[&_h1]:[font-size:27px]">
                   <div>
                     <h3 className="font-serif text-xl">
                       Order {formatOrderId(order.id)}
@@ -117,7 +117,7 @@ export default function Account() {
                     <p>{order.paymentStatus}</p>
                   </div>
                 </div>
-                <table className="admin-table [width:100%] [border-collapse:collapse] [text-align:left] [font-size:13px] [&_th]:[padding:15px_12px] [&_th]:[border-bottom:1px_solid_#eee] [&_td]:[padding:15px_12px] [&_td]:[border-bottom:1px_solid_#eee] [&_th]:[color:#888] [&_th]:[font-size:11px] [&_th]:[text-transform:uppercase] [&_th]:[letter-spacing:1px] [&_img]:[height:52px] [&_img]:[width:45px] [&_img]:[object-fit:cover] [&_button]:[color:#781d2d]">
+                <table className="admin-table [width:100%] [border-collapse:collapse] [text-align:left] [font-size:13px] [&_th]:[padding:15px_12px] [&_th]:[border-bottom:1px_solid_#eadfdc] [&_td]:[padding:15px_12px] [&_td]:[border-bottom:1px_solid_#eadfdc] [&_th]:[color:#786565] [&_th]:[font-size:11px] [&_th]:[text-transform:uppercase] [&_th]:[letter-spacing:1px] [&_img]:[height:52px] [&_img]:[width:45px] [&_img]:[object-fit:cover] [&_button]:[color:#781d2d]">
                   <thead>
                     <tr>
                       <th>Product</th>

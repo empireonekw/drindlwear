@@ -8,7 +8,7 @@ import { setDiscounts, totalSetDiscount } from "@/lib/sets";
 import { deliveryCharge, storePolicy } from "@/lib/store-policy";
 
 const primaryButton =
-  "inline-flex w-full items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#9b3345] disabled:cursor-not-allowed disabled:bg-[#786565]";
+  "inline-flex w-full items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#5e1622] disabled:cursor-not-allowed disabled:bg-[#786565]";
 
 type Row = CartItem & { product: Product };
 
@@ -46,25 +46,25 @@ export default function Cart() {
     const available = limit(row);
     const sizeNote = size ? ` in size ${size}` : "";
     return (
-      <li key={`${id}-${size ?? ""}-${setId ?? ""}`} className="flex gap-5 border-b border-[#eee] py-5 max-[520px]:gap-3">
+      <li key={`${id}-${size ?? ""}-${setId ?? ""}`} className="flex gap-5 border-b border-[#eadfdc] py-5 max-[520px]:gap-3">
         <img src={product.image} alt="" className="h-[135px] w-[100px] shrink-0 object-cover max-[520px]:h-[110px] max-[520px]:w-[82px]" />
         <div className="min-w-0 flex-1">
           <Link href={`/product/${id}`} className="font-semibold hover:text-[#781d2d]">
             {product.name}
           </Link>
-          <p className="m-0 mt-1 text-sm text-[#8a7c7c]">
+          <p className="m-0 mt-1 text-sm text-[#786565]">
             {product.color}
             {size ? ` · Size ${size}` : ""}
           </p>
           {missingSize(row) ? (
-            <p role="alert" className="m-0 mt-1 text-[13px] text-[#a32232]">
+            <p role="alert" className="m-0 mt-1 text-[13px] text-[#781d2d]">
               No size chosen.{" "}
               <Link className="underline" href={`/product/${id}`}>Choose a size</Link> and remove this line.
             </p>
           ) : available <= 0 ? (
-            <p role="alert" className="m-0 mt-1 text-[13px] text-[#a32232]">Out of stock{sizeNote}</p>
+            <p role="alert" className="m-0 mt-1 text-[13px] text-[#781d2d]">Out of stock{sizeNote}</p>
           ) : qty > available ? (
-            <p role="alert" className="m-0 mt-1 text-[13px] text-[#a32232]">
+            <p role="alert" className="m-0 mt-1 text-[13px] text-[#781d2d]">
               Only {available} left{sizeNote}. Reduce quantity to continue.
             </p>
           ) : available <= 3 ? (
@@ -105,7 +105,7 @@ export default function Cart() {
     <div className="mx-auto max-w-[1360px] px-8 max-[520px]:px-4">
       <h1 className="m-0 mt-9 text-center font-serif text-[42px] font-normal text-[#781d2d]">Cart</h1>
       {!rows.length ? (
-        <div className="py-24 text-center text-[#777]">
+        <div className="py-24 text-center text-[#786565]">
           <p>Your cart is empty.</p>
           <Link href="/collections/all" className={`${primaryButton} mt-4 w-auto`}>
             Continue shopping
@@ -120,7 +120,7 @@ export default function Cart() {
                 aria-label={group.set.name}
                 className="mb-6 border border-[#eadfdb] bg-white px-5 pt-4 max-[520px]:px-3"
               >
-                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[#eee] pb-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[#eadfdc] pb-3">
                   <Link href={`/sets/${group.set.id}`} className="font-serif text-[22px] text-[#781d2d] hover:underline">
                     {group.set.name}
                   </Link>
@@ -131,7 +131,7 @@ export default function Cart() {
                   )}
                 </div>
                 {group.incomplete && (
-                  <p className="m-0 mt-3 bg-[#fff7e5] px-3 py-2 text-[13px]">
+                  <p className="m-0 mt-3 bg-[#f6eeec] px-3 py-2 text-[13px]">
                     {group.completeSets === 0
                       ? "A piece of this set is missing, so the set price doesn't apply."
                       : "Some pieces have extra quantity; the set price applies to complete sets only."}{" "}
@@ -144,7 +144,7 @@ export default function Cart() {
             {looseRows.length > 0 && <ul className="m-0 list-none p-0">{looseRows.map(renderRow)}</ul>}
           </div>
 
-          <aside className="h-max bg-[#f7f5f1] p-7">
+          <aside className="h-max bg-[#fbf5f2] p-7">
             <h2 className="m-0 font-serif text-[26px] font-normal">Order summary</h2>
             <div className="mt-4 bg-white p-4">
               <p className="m-0 text-sm" aria-live="polite">
@@ -171,17 +171,17 @@ export default function Cart() {
               </div>
             </div>
             <dl className="m-0 mt-4 text-sm">
-              <div className="flex justify-between border-b border-[#eee] py-4">
+              <div className="flex justify-between border-b border-[#eadfdc] py-4">
                 <dt>Subtotal</dt>
                 <dd className="m-0 font-semibold">{money(subtotal)}</dd>
               </div>
               {discount > 0 && (
-                <div className="flex justify-between border-b border-[#eee] py-4 text-[#1f6b44]">
+                <div className="flex justify-between border-b border-[#eadfdc] py-4 text-[#1f6b44]">
                   <dt>Set savings</dt>
                   <dd className="m-0 font-semibold">−{money(discount)}</dd>
                 </div>
               )}
-              <div className="flex justify-between border-b border-[#eee] py-4">
+              <div className="flex justify-between border-b border-[#eadfdc] py-4">
                 <dt>Delivery</dt>
                 <dd className={`m-0 ${delivery === 0 ? "font-semibold text-[#1f6b44]" : ""}`}>
                   {delivery === 0 ? "Free" : money(delivery)}

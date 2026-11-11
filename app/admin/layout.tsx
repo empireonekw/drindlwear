@@ -32,7 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/"
-              className="bg-[#781d2d] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[1.8px] text-white transition-colors hover:bg-[#9b3345]"
+              className="bg-[#781d2d] px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[1.8px] text-white transition-colors hover:bg-[#5e1622]"
             >
               Back to the shop
             </Link>

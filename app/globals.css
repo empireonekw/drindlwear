@@ -2,12 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Brand palette (Dirndl Wear brand guide). Tailwind has the same names: bg-burgundy, text-taupe, … */
 :root {
-  --ink: #211c1d;
-  --cream: #fbf5f2;
-  --rose: #d9b6b6;
-  --burgundy: #781d2d;
-  --taupe: #786565;
+  --burgundy: #781d2d; /* Heritage Burgundy: logo, primary buttons, key headings */
+  --burgundy-dark: #5e1622; /* hover / pressed */
+  --ivory: #fbf5f2; /* Warm Ivory: page background */
+  --rose: #d9b6b6; /* Dusty Rose: subtle accents, never small text on ivory */
+  --taupe: #786565; /* Antique Taupe: labels and secondary text */
+  --ink: #211c1d; /* Charcoal Black: body text */
+  --cream: var(--ivory);
+}
+
+::selection {
+  background: var(--rose);
+  color: var(--ink);
 }
 
 *, *::before, *::after {
@@ -17,7 +25,7 @@
 body {
   margin: 0;
   color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, sans-serif;
   background: var(--cream);
 }
 

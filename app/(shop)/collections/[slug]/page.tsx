@@ -112,12 +112,12 @@ function Collection() {
       <h1 className="m-0 mt-4 text-center font-serif text-[42px] font-normal text-[#781d2d] max-[520px]:text-[34px]">
         {title.charAt(0).toUpperCase() + title.slice(1)}
       </h1>
-      <p className="mb-10 mt-3 text-center text-[13px] tracking-[1px] text-[#777]">
+      <p className="mb-10 mt-3 text-center text-[13px] tracking-[1px] text-[#786565]">
         {collection?.subtitle ?? "FIND YOUR NEXT FAVORITE LOOK"}
       </p>
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-[#eee] py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-[#eadfdc] py-3">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -127,7 +127,7 @@ function Collection() {
             <SlidersHorizontal size={17} aria-hidden="true" />
             Filters{activeCount > 0 ? ` (${activeCount})` : ""}
           </button>
-          <p className="m-0 text-sm text-[#5e5050]" aria-live="polite">
+          <p className="m-0 text-sm text-[#786565]" aria-live="polite">
             {results.length} {results.length === 1 ? "product" : "products"}
           </p>
         </div>
@@ -181,7 +181,7 @@ function Collection() {
             <ProductGrid items={results} columns={3} />
           ) : (
             <div className="py-24 text-center">
-              <p className="m-0 text-[#777]">
+              <p className="m-0 text-[#786565]">
                 {inCollection.length ? "No products match these filters." : "No products found."}
               </p>
               {activeCount > 0 && (
@@ -208,7 +208,7 @@ function Collection() {
         className="m-0 ml-auto h-dvh max-h-none w-[min(420px,100vw)] max-w-none p-0 text-[#211c1d] backdrop:bg-[rgb(25_20_21/55%)]"
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-[#eee] px-5 py-3">
+          <div className="flex items-center justify-between border-b border-[#eadfdc] px-5 py-3">
             <h2 className="m-0 font-serif text-[24px] font-normal">Filters</h2>
             <button
               type="button"
@@ -220,7 +220,7 @@ function Collection() {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-5">{panel}</div>
-          <div className="grid grid-cols-[auto_1fr] gap-3 border-t border-[#eee] p-4">
+          <div className="grid grid-cols-[auto_1fr] gap-3 border-t border-[#eadfdc] p-4">
             <button
               type="button"
               onClick={clearAll}
@@ -232,7 +232,7 @@ function Collection() {
             <button
               type="button"
               onClick={() => drawer.current?.close()}
-              className="h-12 bg-[#781d2d] text-[12px] font-medium uppercase tracking-[1.5px] text-white hover:bg-[#9b3345]"
+              className="h-12 bg-[#781d2d] text-[12px] font-medium uppercase tracking-[1.5px] text-white hover:bg-[#5e1622]"
             >
               Show {results.length} {results.length === 1 ? "product" : "products"}
             </button>

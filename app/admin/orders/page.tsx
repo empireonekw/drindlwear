@@ -45,14 +45,14 @@ export default function Orders() {
 
   return (
     <>
-      <div className="admin-head [display:flex] [justify-content:space-between] [align-items:center] [margin-bottom:30px] [&_h1]:[font:32px_Georgia,serif] max-[520px]:[flex-wrap:wrap] max-[520px]:[gap:12px] max-[520px]:[&_h1]:[font-size:27px]">
+      <div className="admin-head [display:flex] [justify-content:space-between] [align-items:center] [margin-bottom:30px] [&_h1]:[font:500_32px_var(--font-serif)] max-[520px]:[flex-wrap:wrap] max-[520px]:[gap:12px] max-[520px]:[&_h1]:[font-size:27px]">
         <h1>Orders</h1>
         <span>{orders.length} Orders</span>
       </div>
       {error && <p role="alert">{error}</p>}
 
-      <div className="admin-card [background:white] [border:1px_solid_#eee] [border-radius:8px] [padding:25px] [margin:25px_0] [overflow-x:auto] [min-width:0] motion-safe:[transition:transform_240ms_ease,_box-shadow_240ms_ease] motion-safe:[&:hover]:[transform:translateY(-3px)] motion-safe:[&:hover]:[box-shadow:0_12px_28px_rgb(33_28_29_/_8%)]">
-        <table className="admin-table [width:100%] [border-collapse:collapse] [text-align:left] [font-size:13px] [&_th]:[padding:15px_12px] [&_th]:[border-bottom:1px_solid_#eee] [&_td]:[padding:15px_12px] [&_td]:[border-bottom:1px_solid_#eee] [&_th]:[color:#888] [&_th]:[font-size:11px] [&_th]:[text-transform:uppercase] [&_th]:[letter-spacing:1px] [&_img]:[height:52px] [&_img]:[width:45px] [&_img]:[object-fit:cover] [&_button]:[color:#781d2d]">
+      <div className="admin-card [background:white] [border:1px_solid_#eadfdc] [border-radius:8px] [padding:25px] [margin:25px_0] [overflow-x:auto] [min-width:0] motion-safe:[transition:transform_240ms_ease,_box-shadow_240ms_ease] motion-safe:[&:hover]:[transform:translateY(-3px)] motion-safe:[&:hover]:[box-shadow:0_12px_28px_rgb(33_28_29_/_8%)]">
+        <table className="admin-table [width:100%] [border-collapse:collapse] [text-align:left] [font-size:13px] [&_th]:[padding:15px_12px] [&_th]:[border-bottom:1px_solid_#eadfdc] [&_td]:[padding:15px_12px] [&_td]:[border-bottom:1px_solid_#eadfdc] [&_th]:[color:#786565] [&_th]:[font-size:11px] [&_th]:[text-transform:uppercase] [&_th]:[letter-spacing:1px] [&_img]:[height:52px] [&_img]:[width:45px] [&_img]:[object-fit:cover] [&_button]:[color:#781d2d]">
           <thead>
             <tr>
               <th>Order Number</th>
@@ -81,7 +81,7 @@ export default function Orders() {
                   <td>{money(order.total)}</td>
                   <td>
                     <select
-                      className="field [padding:12px] [border:1px_solid_#ddd] [background:white]"
+                      className="field [padding:12px] [border:1px_solid_#dcd0cd] [background:white]"
                       aria-label={`Change status for order ${order.id}`}
                       value={order.status}
                       onChange={(event) =>
@@ -98,7 +98,7 @@ export default function Orders() {
                   <td>
                     <button
                       type="button"
-                      className="order-view-button [display:inline-flex] [align-items:center] [gap:7px] [border:1px_solid_#ead9d7] [border-radius:6px] [padding:8px_11px] [color:#781d2d] [background:#fff] [font-size:12px] [font-weight:600] [transition:background_.2s,_border-color_.2s] [&:hover]:[background:#fbf3f1] [&:hover]:[border-color:#c99e99]"
+                      className="order-view-button [display:inline-flex] [align-items:center] [gap:7px] [border:1px_solid_#ead9d7] [border-radius:6px] [padding:8px_11px] [color:#781d2d] [background:#fff] [font-size:12px] [font-weight:600] [transition:background_.2s,_border-color_.2s] [&:hover]:[background:#fbf5f2] [&:hover]:[border-color:#d9b6b6]"
                       aria-label={`View details for order ${order.id}`}
                       title="View order details"
                       onClick={() => setSelectedOrderId(order.id)}
@@ -125,9 +125,9 @@ export default function Orders() {
             aria-labelledby="order-dialog-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <header className="order-dialog-header [display:flex] [align-items:flex-start] [justify-content:space-between] [padding:25px_30px_22px] [border-bottom:1px_solid_#eee8e7] [background:#fcf8f6] [&_h2]:[margin:7px_0_4px] [&_h2]:[color:#35171e] [&_h2]:[font:28px_Georgia,serif] [&_p]:[color:#786f6e] [&_p]:[font-size:13px] max-[520px]:[padding:21px_20px_17px]">
+            <header className="order-dialog-header [display:flex] [align-items:flex-start] [justify-content:space-between] [padding:25px_30px_22px] [border-bottom:1px_solid_#eee8e7] [background:#fbf5f2] [&_h2]:[margin:7px_0_4px] [&_h2]:[color:#211c1d] [&_h2]:[font:500_28px_var(--font-serif)] [&_p]:[color:#786565] [&_p]:[font-size:13px] max-[520px]:[padding:21px_20px_17px]">
               <div>
-                <span className="order-dialog-eyebrow [display:block] [color:#927d7b] [font-size:10px] [font-weight:700] [letter-spacing:1.2px]">ORDER DETAILS</span>
+                <span className="order-dialog-eyebrow [display:block] [color:#786565] [font-size:10px] [font-weight:700] [letter-spacing:1.2px]">ORDER DETAILS</span>
                 <h2 id="order-dialog-title">
                   {formatOrderId(selectedOrder.id)}
                 </h2>
@@ -135,7 +135,7 @@ export default function Orders() {
               </div>
               <button
                 type="button"
-                className="order-dialog-close [display:grid] [width:36px] [height:36px] [place-items:center] [border:1px_solid_#e8ddda] [border-radius:50%] [color:#5b3035] [background:white] [&:hover]:[background:#f5eae8]"
+                className="order-dialog-close [display:grid] [width:36px] [height:36px] [place-items:center] [border:1px_solid_#e8ddda] [border-radius:50%] [color:#211c1d] [background:white] [&:hover]:[background:#f5eae8]"
                 aria-label="Close order details"
                 onClick={() => setSelectedOrderId(null)}
               >
@@ -145,14 +145,14 @@ export default function Orders() {
 
             <div className="order-dialog-content [padding:25px_30px_30px] max-[520px]:[padding:20px]">
               <div className="order-detail-grid [display:grid] [grid-template-columns:repeat(2,_minmax(0,_1fr))] [gap:12px] max-[520px]:[grid-template-columns:1fr]">
-                <div className="order-detail-card [display:flex] [min-width:0] [flex-direction:column] [gap:7px] [padding:16px] [border:1px_solid_#eee8e7] [border-radius:8px] [color:#544849] [font-size:13px] [overflow-wrap:anywhere] [&_strong]:[color:#302326] [&_strong]:[font-size:14px]">
-                  <span className="order-detail-label [display:block] [color:#927d7b] [font-size:10px] [font-weight:700] [letter-spacing:1.2px] [margin-bottom:3px]">CUSTOMER</span>
+                <div className="order-detail-card [display:flex] [min-width:0] [flex-direction:column] [gap:7px] [padding:16px] [border:1px_solid_#eee8e7] [border-radius:8px] [color:#786565] [font-size:13px] [overflow-wrap:anywhere] [&_strong]:[color:#211c1d] [&_strong]:[font-size:14px]">
+                  <span className="order-detail-label [display:block] [color:#786565] [font-size:10px] [font-weight:700] [letter-spacing:1.2px] [margin-bottom:3px]">CUSTOMER</span>
                   <strong>{selectedOrder.customer}</strong>
                   <span>{selectedOrder.customerEmail || "Email unavailable"}</span>
                   <span>{selectedOrder.customerPhone || "Phone not provided"}</span>
                 </div>
-                <div className="order-detail-card [display:flex] [min-width:0] [flex-direction:column] [gap:7px] [padding:16px] [border:1px_solid_#eee8e7] [border-radius:8px] [color:#544849] [font-size:13px] [overflow-wrap:anywhere] [&_strong]:[color:#302326] [&_strong]:[font-size:14px]">
-                  <span className="order-detail-label [display:block] [color:#927d7b] [font-size:10px] [font-weight:700] [letter-spacing:1.2px] [margin-bottom:3px]">DELIVERY ADDRESS</span>
+                <div className="order-detail-card [display:flex] [min-width:0] [flex-direction:column] [gap:7px] [padding:16px] [border:1px_solid_#eee8e7] [border-radius:8px] [color:#786565] [font-size:13px] [overflow-wrap:anywhere] [&_strong]:[color:#211c1d] [&_strong]:[font-size:14px]">
+                  <span className="order-detail-label [display:block] [color:#786565] [font-size:10px] [font-weight:700] [letter-spacing:1.2px] [margin-bottom:3px]">DELIVERY ADDRESS</span>
                   {selectedOrder.shippingAddress ? (
                     <strong>
                       {selectedOrder.shippingAddress.street}
@@ -164,8 +164,8 @@ export default function Orders() {
                     <strong>Address unavailable</strong>
                   )}
                 </div>
-                <div className="order-detail-card order-detail-summary [display:flex] [min-width:0] [flex-direction:column] [gap:7px] [padding:16px] [border:1px_solid_#eee8e7] [border-radius:8px] [color:#544849] [font-size:13px] [overflow-wrap:anywhere] [&_strong]:[color:#302326] [&_strong]:[font-size:14px] [grid-column:1_/_-1] [flex-direction:row] [align-items:center] [justify-content:space-between] [&_.order-detail-label]:[margin:0] max-[520px]:[grid-column:auto] max-[520px]:[flex-wrap:wrap] max-[520px]:[justify-content:flex-start] max-[520px]:[gap:10px_18px]">
-                  <span className="order-detail-label [display:block] [color:#927d7b] [font-size:10px] [font-weight:700] [letter-spacing:1.2px] [margin-bottom:3px]">ORDER STATUS</span>
+                <div className="order-detail-card order-detail-summary [display:flex] [min-width:0] [flex-direction:column] [gap:7px] [padding:16px] [border:1px_solid_#eee8e7] [border-radius:8px] [color:#786565] [font-size:13px] [overflow-wrap:anywhere] [&_strong]:[color:#211c1d] [&_strong]:[font-size:14px] [grid-column:1_/_-1] [flex-direction:row] [align-items:center] [justify-content:space-between] [&_.order-detail-label]:[margin:0] max-[520px]:[grid-column:auto] max-[520px]:[flex-wrap:wrap] max-[520px]:[justify-content:flex-start] max-[520px]:[gap:10px_18px]">
+                  <span className="order-detail-label [display:block] [color:#786565] [font-size:10px] [font-weight:700] [letter-spacing:1.2px] [margin-bottom:3px]">ORDER STATUS</span>
                   <strong>{selectedOrder.status}</strong>
                   <span>
                     Payment: {selectedOrder.paymentStatus || "unpaid"}
@@ -173,11 +173,11 @@ export default function Orders() {
                 </div>
               </div>
 
-              <h3 className="order-items-heading [margin:25px_0_12px] [color:#35171e] [font:20px_Georgia,serif]">Items ordered</h3>
+              <h3 className="order-items-heading [margin:25px_0_12px] [color:#211c1d] [font:500_20px_var(--font-serif)]">Items ordered</h3>
               {selectedOrder.items?.length ? (
                 <div className="order-items-list [border-top:1px_solid_#eee8e7]">
                   {selectedOrder.items.map((item) => (
-                    <div className="order-item-row [display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [padding:14px_2px] [border-bottom:1px_solid_#eee8e7] [font-size:13px] [&_div]:[display:flex] [&_div]:[flex-direction:column] [&_div]:[gap:5px] [&_div_span]:[color:#817576] [&_div_span]:[font-size:12px] [&_>_strong]:[white-space:nowrap]" key={`${item.productId}-${item.size ?? ""}-${item.setName ?? ""}`}>
+                    <div className="order-item-row [display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [padding:14px_2px] [border-bottom:1px_solid_#eee8e7] [font-size:13px] [&_div]:[display:flex] [&_div]:[flex-direction:column] [&_div]:[gap:5px] [&_div_span]:[color:#786565] [&_div_span]:[font-size:12px] [&_>_strong]:[white-space:nowrap]" key={`${item.productId}-${item.size ?? ""}-${item.setName ?? ""}`}>
                       <div>
                         <strong>{item.name}</strong>
                         <span>
@@ -190,7 +190,7 @@ export default function Orders() {
                   ))}
                 </div>
               ) : (
-                <p className="order-items-empty [padding:14px_0] [color:#817576] [font-size:13px]">
+                <p className="order-items-empty [padding:14px_0] [color:#786565] [font-size:13px]">
                   Item details are unavailable for this order.
                 </p>
               )}
@@ -212,7 +212,7 @@ export default function Orders() {
                   <strong>−{money(selectedOrder.discount)}</strong>
                 </p>
               ) : null}
-              <div className="order-total-row [display:flex] [justify-content:space-between] [margin-top:16px] [padding-top:17px] [border-top:1px_solid_#dfd3d1] [color:#35171e] [font-size:16px] [&_strong]:[font-size:18px]">
+              <div className="order-total-row [display:flex] [justify-content:space-between] [margin-top:16px] [padding-top:17px] [border-top:1px_solid_#dfd3d1] [color:#211c1d] [font-size:16px] [&_strong]:[font-size:18px]">
                 <span>Order total</span>
                 <strong>{money(selectedOrder.total)}</strong>
               </div>

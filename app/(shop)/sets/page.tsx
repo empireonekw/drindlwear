@@ -25,7 +25,7 @@ export default function SetsPage() {
       <h1 className="m-0 mt-4 text-center font-serif text-[42px] font-normal text-[#781d2d] max-[520px]:text-[34px]">
         Complete sets
       </h1>
-      <p className="mx-auto mb-10 mt-3 max-w-[560px] text-center text-[15px] text-[#5e5050]">
+      <p className="mx-auto mb-10 mt-3 max-w-[560px] text-center text-[15px] text-[#786565]">
         Whole outfits, put together for you. Choose a size for each piece and save on the set.
       </p>
 
@@ -36,7 +36,7 @@ export default function SetsPage() {
           ))}
         </div>
       ) : (
-        <p className="py-24 text-center text-[#777]">No sets available right now.</p>
+        <p className="py-24 text-center text-[#786565]">No sets available right now.</p>
       )}
     </div>
   );

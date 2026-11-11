@@ -9,7 +9,7 @@ import { facetOptions, Filters, ListFacet } from "@/lib/filters";
 type Options = ReturnType<typeof facetOptions>;
 type Count = (facet: ListFacet, value: string) => number;
 
-const groupClass = "group border-b border-[#eee] py-4";
+const groupClass = "group border-b border-[#eadfdc] py-4";
 const summaryClass =
   "flex cursor-pointer list-none items-center justify-between text-[12px] font-semibold uppercase tracking-[1.4px] [&::-webkit-details-marker]:hidden";
 const optionRow =
@@ -74,7 +74,7 @@ export function CollectionFilters({
                 />
               )}
               <span className="flex-1">{item.label}</span>
-              <span className="text-[12px] text-[#8a7c7c]">{n}</span>
+              <span className="text-[12px] text-[#786565]">{n}</span>
             </label>
           </li>
         );
@@ -235,7 +235,7 @@ function PriceRange({
       <button type="submit" className="h-11 border border-[#211c1d] px-3 text-[12px] uppercase tracking-[1px] hover:bg-[#211c1d] hover:text-white">
         Go
       </button>
-      <p className="col-span-3 m-0 text-[12px] text-[#8a7c7c]">
+      <p className="col-span-3 m-0 text-[12px] text-[#786565]">
         Prices here: {money(range.min)} – {money(range.max)}
       </p>
     </form>

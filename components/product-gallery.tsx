@@ -29,14 +29,14 @@ export function ProductGallery({
       }}
     >
       {/* Main image */}
-      <div className="relative overflow-hidden bg-[#eee] min-[851px]:order-2">
+      <div className="relative overflow-hidden bg-[#eadfdc] min-[851px]:order-2">
         <img
           src={images[active]}
           alt={count > 1 ? `${name}, image ${active + 1} of ${count}` : name}
           className="aspect-[3/4] w-full object-cover min-[851px]:max-h-[760px]"
         />
         {badge && (
-          <span className="absolute left-3 top-3 bg-[#a32232] px-3 py-1.5 text-[11px] font-semibold tracking-[1px] text-white">
+          <span className="absolute left-3 top-3 bg-[#781d2d] px-3 py-1.5 text-[11px] font-semibold tracking-[1px] text-white">
             {badge}
           </span>
         )}

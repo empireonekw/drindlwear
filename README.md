@@ -1,7 +1,7 @@
 # Dirndl Wear
 
 <p align="center">
-  <img src="public/brand/dirndl-wear-logo1.png" alt="Dirndl Wear — Traditional Dresses" width="360">
+  <img src="public/brand/dirndl-wear-logo.png" alt="Dirndl Wear — Traditional Dresses" width="360">
 </p>
 
 <p align="center">
@@ -132,7 +132,19 @@ public/
 | Antique Taupe | `#786565` | Secondary text |
 | Charcoal Black | `#211C1D` | Body text |
 
-The full logo is in `public/brand/dirndl-wear-logo1.png`; the compact monogram is in `public/brand/dirndl-wear-monogram.png`.
+Type: Cormorant Garamond for editorial headings, Inter for interface text (loaded with `next/font` in `app/layout.tsx`). The palette is available as Tailwind colours (`burgundy`, `burgundy-dark`, `ivory`, `rose`, `taupe`, `charcoal`) and CSS variables in `app/globals.css`.
+
+Logo files in `public/brand/`, cut with transparent backgrounds from the approved logo artwork:
+
+| File | Use (per the brand guide) |
+| --- | --- |
+| `dirndl-wear-logo.png` | Full logo where there is room (220 px wide or more) |
+| `dirndl-wear-wordmark.png` | Navigation and narrow horizontal spaces |
+| `dirndl-wear-monogram.png` | Small spaces (mobile header), 32 px or larger |
+| `*-white.png` | Reversed versions, only on solid burgundy (footer, admin sidebar) |
+| `app/icon.png`, `app/apple-icon.png` | Favicon and home-screen icon from the DW emblem |
+
+These are raster cut-outs for the website. The guide still asks for SVG/PDF vector masters for print and embroidery.
 
 ## Current limitations
 

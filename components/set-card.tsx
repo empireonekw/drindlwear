@@ -13,7 +13,7 @@ export function SetCard({ set, pricing }: { set: OutfitSet; pricing: SetPricing 
       href={`/sets/${set.id}`}
       className="group block bg-white text-[#211c1d] motion-safe:transition motion-safe:hover:-translate-y-[3px] motion-safe:hover:shadow-[0_12px_28px_rgb(33_28_29/8%)]"
     >
-      <div className="relative grid aspect-[4/3] grid-cols-[2fr_1fr] gap-1 overflow-hidden bg-[#f3f0ec]">
+      <div className="relative grid aspect-[4/3] grid-cols-[2fr_1fr] gap-1 overflow-hidden bg-[#fbf5f2]">
         <img src={first.image} alt="" className="h-full w-full object-cover" />
         <div className="grid gap-1" style={{ gridTemplateRows: `repeat(${Math.max(rest.length, 1)}, minmax(0, 1fr))` }}>
           {rest.map((piece) => (
@@ -36,7 +36,7 @@ export function SetCard({ set, pricing }: { set: OutfitSet; pricing: SetPricing 
         </p>
         <p className="m-0 mt-2 flex flex-wrap items-baseline gap-x-2 text-sm">
           <strong className="text-base">{money(pricing.price)}</strong>
-          <del className="text-[#999]">{money(pricing.full)}</del>
+          <del className="text-[#786565]">{money(pricing.full)}</del>
           <span className="text-[#1f6b44]">You save {money(pricing.saving)}</span>
         </p>
       </div>

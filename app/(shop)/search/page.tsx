@@ -17,7 +17,7 @@ function Results() {
 
   return (
     <div className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]">
-      <h1 className="page-heading [text-align:center] [font:42px_Georgia,serif] [margin:35px_0_14px] [color:#781d2d]">Search results for „{query}“</h1>
+      <h1 className="page-heading [text-align:center] [font:500_42px_var(--font-serif)] [margin:35px_0_14px] [color:#781d2d]">Search results for „{query}“</h1>
       <div className="section [padding:70px_0] max-[520px]:[padding:45px_0]">
         <ProductGrid items={matches} />
       </div>

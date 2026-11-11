@@ -12,7 +12,7 @@ import { availableStock, money, Product, productSizes, requiresSize } from "@/li
 import { OutfitSet, setPricing, SetPricing } from "@/lib/sets";
 
 const primaryButton =
-  "inline-flex w-full items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#9b3345] disabled:cursor-not-allowed disabled:bg-[#786565]";
+  "inline-flex w-full items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#5e1622] disabled:cursor-not-allowed disabled:bg-[#786565]";
 
 export default function SetPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -22,7 +22,7 @@ export default function SetPage() {
 
   if (!set || !pricing) {
     return (
-      <div className="py-24 text-center text-[#777]">
+      <div className="py-24 text-center text-[#786565]">
         <p>This set could not be found.</p>
         <Link href="/sets" className="underline">See all sets</Link>
       </div>
@@ -85,11 +85,11 @@ function SetView({ set, pricing }: { set: OutfitSet; pricing: SetPricing }) {
           <h1 className="m-0 mt-2 font-serif text-[40px] font-normal leading-tight text-[#781d2d] max-[520px]:text-[32px]">
             {set.name}
           </h1>
-          <p className="m-0 mt-3 text-[15px] leading-7 text-[#5e5050]">{set.description}</p>
+          <p className="m-0 mt-3 text-[15px] leading-7 text-[#786565]">{set.description}</p>
 
           <div className="mt-5 flex flex-wrap items-baseline gap-3">
             <strong className="text-[24px]">{money(pricing.price)}</strong>
-            <del className="text-[15px] text-[#8a7c7c]">{money(pricing.full)}</del>
+            <del className="text-[15px] text-[#786565]">{money(pricing.full)}</del>
             <span className="bg-[#e3f1e8] px-2 py-0.5 text-[13px] font-semibold text-[#1f6b44]">
               You save {money(pricing.saving)} ({set.discountPercent}%)
             </span>
@@ -98,7 +98,7 @@ function SetView({ set, pricing }: { set: OutfitSet; pricing: SetPricing }) {
             Set price applies when all pieces are in your cart. Includes VAT.
           </p>
 
-          <ol className="m-0 mt-6 list-none divide-y divide-[#eee] border-y border-[#eee] p-0">
+          <ol className="m-0 mt-6 list-none divide-y divide-[#eadfdc] border-y border-[#eadfdc] p-0">
             {pricing.pieces.map((piece, index) => (
               <PieceRow
                 key={piece.id}
@@ -126,7 +126,7 @@ function SetView({ set, pricing }: { set: OutfitSet; pricing: SetPricing }) {
                 ? `Choose ${missing.length === 1 ? "a size" : `${missing.length} sizes`} to continue`
                 : `Add set to cart · ${money(pricing.price)}`}
           </button>
-          {message && <p role="alert" className="m-0 mt-3 text-sm text-[#a32232]">{message}</p>}
+          {message && <p role="alert" className="m-0 mt-3 text-sm text-[#781d2d]">{message}</p>}
           {added && (
             <p role="status" className="m-0 mt-3 flex flex-wrap gap-x-3 text-sm text-[#1f6b44]">
               The set is in your cart.
@@ -140,7 +140,7 @@ function SetView({ set, pricing }: { set: OutfitSet; pricing: SetPricing }) {
         <h2 id="pieces-title" className="m-0 mb-3 text-center font-serif text-[34px] font-normal text-[#781d2d] max-[520px]:text-[29px]">
           Or buy pieces separately
         </h2>
-        <p className="mb-9 text-center text-[13px] tracking-[1px] text-[#777]">EVERY PIECE IN THIS SET</p>
+        <p className="mb-9 text-center text-[13px] tracking-[1px] text-[#786565]">EVERY PIECE IN THIS SET</p>
         <ProductGrid items={pricing.pieces} />
       </section>
     </div>
@@ -170,7 +170,7 @@ function PieceRow({
         <div className="min-w-0 flex-1">
           <p className="m-0 text-[11px] uppercase tracking-[1.4px] text-[#786565]">Piece {index + 1}</p>
           <Link href={`/product/${piece.id}`} className="font-semibold hover:text-[#781d2d]">{piece.name}</Link>
-          <p className="m-0 text-sm text-[#5e5050]">
+          <p className="m-0 text-sm text-[#786565]">
             {piece.color} · {money(piece.price)}
           </p>
           {piece.fit && <p className="m-0 mt-1 text-[13px] text-[#786565]">{piece.fit}</p>}
@@ -182,7 +182,7 @@ function PieceRow({
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <p id={labelId} className="m-0 text-sm">
               <strong>Size:</strong> {size ?? "choose a size"}
-              {left !== null && left <= 3 && <span className="ml-2 text-[#a32232]">Only {left} left</span>}
+              {left !== null && left <= 3 && <span className="ml-2 text-[#781d2d]">Only {left} left</span>}
             </p>
             <button
               type="button"
@@ -207,7 +207,7 @@ function PieceRow({
                   className={
                     "h-10 border text-sm transition " +
                     (soldOut
-                      ? "cursor-not-allowed border-dashed border-[#d8c9c4] bg-[#f7f2f0] text-[#a99c9c] line-through"
+                      ? "cursor-not-allowed border-dashed border-[#d8c9c4] bg-[#fbf5f2] text-[#786565] line-through"
                       : selected
                         ? "border-[#781d2d] bg-[#781d2d] text-white"
                         : "border-[#cfc3bf] bg-white hover:border-[#211c1d]")

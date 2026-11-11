@@ -29,7 +29,7 @@ export function ProductCard({ p }: { p: Product }) {
   const badge = outOfStock
     ? { text: "Sold out", className: "bg-[#211c1d] text-white" }
     : discount > 0
-      ? { text: `−${discount}%`, className: "bg-[#a32232] text-white" }
+      ? { text: `−${discount}%`, className: "bg-[#781d2d] text-white" }
       : p.stock <= 3
         ? { text: `Only ${p.stock} left`, className: "bg-white text-[#781d2d]" }
         : null;
@@ -47,7 +47,7 @@ export function ProductCard({ p }: { p: Product }) {
 
   return (
     <article className="group relative bg-white motion-safe:transition motion-safe:duration-200 motion-safe:hover:-translate-y-[3px] motion-safe:hover:shadow-[0_12px_28px_rgb(33_28_29/8%)]">
-      <div className="relative aspect-[4/5] overflow-hidden bg-[#f3f0ec]">
+      <div className="relative aspect-[4/5] overflow-hidden bg-[#fbf5f2]">
         <Link href={`/product/${p.id}`} className="absolute inset-0 block">
           <img
             src={p.image}
@@ -106,7 +106,7 @@ export function ProductCard({ p }: { p: Product }) {
                 <button
                   type="button"
                   onClick={() => quickAdd()}
-                  className="flex h-10 w-full items-center justify-center gap-2 bg-[#781d2d] text-[11px] uppercase tracking-[1.4px] text-white hover:bg-[#9b3345]"
+                  className="flex h-10 w-full items-center justify-center gap-2 bg-[#781d2d] text-[11px] uppercase tracking-[1.4px] text-white hover:bg-[#5e1622]"
                 >
                   <ShoppingBag size={15} aria-hidden="true" /> Add to cart
                 </button>
@@ -151,21 +151,21 @@ export function ProductCard({ p }: { p: Product }) {
           {p.color}
         </span>
         <div className="flex flex-wrap items-baseline gap-x-2">
-          <strong className={discount ? "text-[#a32232]" : ""}>{money(p.price)}</strong>
-          {p.oldPrice && <del className="text-[#999]">{money(p.oldPrice)}</del>}
+          <strong className={discount ? "text-[#781d2d]" : ""}>{money(p.price)}</strong>
+          {p.oldPrice && <del className="text-[#786565]">{money(p.oldPrice)}</del>}
         </div>
         {outOfStock ? (
-          <span className="text-[12px] text-[#a32232]">Sold out</span>
+          <span className="text-[12px] text-[#781d2d]">Sold out</span>
         ) : (
           sizesLeft.length > 0 && (
-            <span className="text-[12px] text-[#8a7c7c]">
+            <span className="text-[12px] text-[#786565]">
               <span className="sr-only">Sizes available: </span>
               {sizesLeft.join(" · ")}
             </span>
           )
         )}
         {feedback && (
-          <span role="status" className={`text-[12px] ${feedback.ok ? "text-[#1f6b44]" : "text-[#a32232]"}`}>
+          <span role="status" className={`text-[12px] ${feedback.ok ? "text-[#1f6b44]" : "text-[#781d2d]"}`}>
             {feedback.text}
             {feedback.ok && (
               <>

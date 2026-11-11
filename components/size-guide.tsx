@@ -70,7 +70,7 @@ export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
                   </thead>
                   <tbody>
                     {chart.rows.map((row) => (
-                      <tr key={row[0]} className="even:bg-[#fbf7f5]">
+                      <tr key={row[0]} className="even:bg-[#fbf5f2]">
                         {row.map((cell, index) =>
                           index === 0 ? (
                             <th key={index} scope="row" className="px-3 py-2 font-semibold">
@@ -105,7 +105,7 @@ export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
             {measuringTips.map((item) => (
               <div key={item.label}>
                 <dt className="font-semibold">{item.label}</dt>
-                <dd className="m-0 text-[#5e5050]">{item.tip}</dd>
+                <dd className="m-0 text-[#786565]">{item.tip}</dd>
               </div>
             ))}
           </dl>
