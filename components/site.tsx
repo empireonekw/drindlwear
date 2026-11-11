@@ -302,6 +302,7 @@ export function Header() {
 }
 export function Footer() {
   const [newsletterMessage, setNewsletterMessage] = useState("");
+  const { user } = useStore();
 
   function subscribe(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -377,7 +378,7 @@ export function Footer() {
             </li>
           ))}
         </ul>
-        <Link href="/admin">Admin Dashboard</Link>
+        {user?.role === "admin" && <Link href="/admin">Admin Dashboard</Link>}
       </div>
     </footer>
   );

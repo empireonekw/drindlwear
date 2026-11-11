@@ -6,7 +6,12 @@ import { ObjectId } from "mongodb";
 
 import { getDb } from "./mongodb";
 
-export const SESSION_COOKIE = "dw_session";
+/**
+ * In production the cookie gets the `__Host-` prefix: browsers then only
+ * accept it over HTTPS, for this exact host, on path "/", which stops
+ * subdomains or plain-HTTP pages from planting or overwriting it.
+ */
+export const SESSION_COOKIE = process.env.NODE_ENV === "production" ? "__Host-dw_session" : "dw_session";
 const SESSION_DAYS = 30;
 
 export type UserRole = "customer" | "admin";
@@ -20,6 +25,8 @@ export type UserDoc = {
   role: UserRole;
   createdAt: Date;
   lastLoginAt?: Date;
+  /** Keyed hash of the IP the account was created from (for the accounts-per-IP limit). */
+  signupIpHash?: string;
 };
 
 type SessionDoc = {
@@ -32,7 +39,6 @@ type SessionDoc = {
 
 /** What the browser is allowed to see about a user. */
 export type PublicUser = {
-  id: string;
   name: string;
   email: string;
   phone?: string;
@@ -42,7 +48,6 @@ export type PublicUser = {
 
 export function toPublicUser(user: UserDoc): PublicUser {
   return {
-    id: user._id.toHexString(),
     name: user.name,
     email: user.email,
     ...(user.phone ? { phone: user.phone } : {}),
@@ -151,32 +156,4 @@ export function passwordProblem(password: string) {
     return "Password must contain at least one letter and one number.";
   }
   return null;
-}
-
-// ---------------------------------------------------------------------------
-// A small in-memory limit on sign-in attempts per IP and per email. It resets
-// when the server restarts and isn't shared between servers, which is enough
-// to slow down password guessing on a single instance.
-
-const attempts = new Map<string, { count: number; resetAt: number }>();
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 10;
-
-export function rateLimited(key: string) {
-  const now = Date.now();
-  const entry = attempts.get(key);
-  if (!entry || entry.resetAt < now) {
-    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > MAX_ATTEMPTS;
-}
-
-export function clearRateLimit(key: string) {
-  attempts.delete(key);
-}
-
-export function clientIp(request: Request) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
 }

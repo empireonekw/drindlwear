@@ -64,7 +64,6 @@ export type ProductInput = Omit<Product, "id" | "oldPrice"> & {
 
 /** The signed-in customer, as returned by /api/auth/*. */
 export type AuthUser = {
-  id: string;
   name: string;
   email: string;
   phone?: string;

@@ -97,6 +97,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Hidden from people; only bots fill it in.
+    const website = String(new FormData(event.currentTarget).get("website") ?? "");
     setFormError("");
     const found = validate();
     setErrors(found);
@@ -119,6 +121,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
                 phone: values.phone,
                 password: values.password,
                 acceptTerms,
+                website,
               }
             : { email: values.email, password: values.password },
         ),
@@ -139,6 +142,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
         return;
       }
       signIn(data.user);
+      // Drop pages cached while signed out (e.g. the /admin redirect).
+      router.refresh();
       router.replace(next);
     } catch {
       setFormError("We couldn't reach the server. Check your connection and try again.");
@@ -241,6 +246,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
           )}
 
           <form noValidate onSubmit={submit} className="space-y-5">
+            {isRegister && (
+              <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+                <label htmlFor="auth-website">Leave this field empty</label>
+                <input id="auth-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
+            )}
             {isRegister && (
               <Field
                 id="auth-name"

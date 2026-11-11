@@ -52,12 +52,36 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). `.env.local` must hold `MONGODB_URI`; the database named in the URI is used (or set `MONGODB_DB`). The `users` and `sessions` collections and their indexes are created on first use.
 
+### Admin account
+
+Set `ADMIN_EMAIL`, `ADMIN_PASSWORD` (and optionally `ADMIN_NAME`) in `.env.local`, then run:
+
+```bash
+npm run seed:admin
+```
+
+This creates the admin, or promotes an existing account with that email and resets its password. Run it again whenever you change `ADMIN_PASSWORD`. Sign in at `/account/login` to reach `/admin`.
+
 ### Production build
 
 ```bash
 npm run build
 npm start
 ```
+
+## Security
+
+| Protection | Where |
+| --- | --- |
+| Passwords hashed with scrypt; sessions are random tokens in an httpOnly cookie (`__Host-` prefixed in production), stored only as SHA-256 | `lib/server/auth.ts` |
+| Rate limits kept in MongoDB (`rate_limits`), so they survive restarts and are shared by every server | `lib/server/security.ts` |
+| Sign-in: 30 requests per IP per 15 min; 5 wrong passwords lock that email for 15 min; 6+ different emails failing from one IP blocks it for 1 hour | `app/api/auth/login` |
+| Sign-up: 5 accounts per IP per 30 days (`MAX_ACCOUNTS_PER_IP`, `ACCOUNTS_PER_IP_WINDOW_DAYS`); 6+ different emails in an hour blocks the IP for 1 hour; 10 attempts per IP per hour; 300 sign-ups per hour site-wide; hidden honeypot field | `app/api/auth/signup` |
+| API accepts only same-site POSTs (CSRF), only GET/HEAD/POST, JSON bodies up to 4 KB, and string fields only (no NoSQL operator injection) | `middleware.ts`, `lib/server/security.ts` |
+| Security headers: CSP, HSTS (production), X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy; no `X-Powered-By`; no browser source maps | `next.config.mjs` |
+| IPs and emails in limiter records are stored as keyed hashes (`AUTH_SECRET`), never in plain text | `lib/server/security.ts` |
+
+**Deploying:** set `AUTH_SECRET` and, behind Vercel or nginx, `TRUSTED_IP_HEADER=x-real-ip`. Without a trusted proxy header, a client can fake its IP in `X-Forwarded-For`; the per-email lock and the site-wide sign-up cap still apply.
 
 ## Routes
 
@@ -77,7 +101,7 @@ npm start
 | `/club` | Dirndl Wear Club page |
 | `/pages/our-story` | Brand story |
 | `/pages/[slug]` | Informational demo pages |
-| `/admin` | Admin dashboard (not protected in preview mode) |
+| `/admin` | Admin dashboard (admin accounts only) |
 | `/admin/products` | Product management |
 | `/admin/orders` | Order list and status controls |
 | `/admin/customers` | Customer summary |
@@ -113,7 +137,6 @@ The full logo is in `public/brand/dirndl-wear-logo1.png`; the compact monogram i
 ## Current limitations
 
 - **Partial backend:** only accounts use MongoDB. Products, orders, payments and email are not connected yet, and admin changes to products reset on reload.
-- **Admin not protected:** users have a `role` field (`customer` by default), but `/admin` doesn't check it yet.
 - **Placeholder data:** `lib/placeholder-products.ts` is for UI work only; delete it once real data is connected.
 - **Asset review required:** Confirm image ownership and commercial usage rights before deployment.
 - **Unofficial project:** This demonstration is not affiliated with the original Krüger site.

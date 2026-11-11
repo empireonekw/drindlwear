@@ -42,6 +42,10 @@ function ensureIndexes(db: Db) {
   if (!globalForMongo.mongoIndexesPromise) {
     globalForMongo.mongoIndexesPromise = Promise.all([
       db.collection("users").createIndex({ email: 1 }, { unique: true }),
+      // Counting accounts created from one IP (stored as a keyed hash, never raw).
+      db.collection("users").createIndex({ signupIpHash: 1, createdAt: 1 }, { sparse: true }),
+      // Rate-limit counters expire on their own.
+      db.collection("rate_limits").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
       db.collection("sessions").createIndex({ tokenHash: 1 }, { unique: true }),
       // MongoDB removes sessions by itself once they expire.
       db.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),

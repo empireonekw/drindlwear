@@ -1,18 +1,14 @@
-import { NextResponse } from "next/server";
-
 import { getCurrentUser, toPublicUser } from "@/lib/server/auth";
+import { jsonError, jsonOk } from "@/lib/server/security";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const user = await getCurrentUser();
-    return NextResponse.json(
-      { user: user ? toPublicUser(user) : null },
-      { headers: { "Cache-Control": "no-store" } },
-    );
+    return jsonOk({ user: user ? toPublicUser(user) : null });
   } catch (error) {
-    console.error("Could not load the signed-in user:", error);
-    return NextResponse.json({ user: null, error: "Could not reach the account service." }, { status: 503 });
+    console.error("Could not load the signed-in user:", error instanceof Error ? error.message : error);
+    return jsonError(503, "Account service unavailable.", { user: null });
   }
 }

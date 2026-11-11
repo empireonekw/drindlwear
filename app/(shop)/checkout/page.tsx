@@ -110,7 +110,7 @@ export default function Checkout() {
           </Link>
         </div>
       ) : (
-        <form key={user?.id ?? "guest"} className="form-panel [max-width:520px] [margin:40px_auto_90px] [&_label]:[display:block] [&_label]:[margin:17px_0_8px] [&_label]:[font-size:12px] [&_input]:[width:100%] [&_input]:[padding:14px] [&_input]:[border:1px_solid_#ddd] [&_textarea]:[width:100%] [&_textarea]:[padding:14px] [&_textarea]:[border:1px_solid_#ddd] [&_.btn]:[width:100%] [&_.btn]:[margin-top:20px]" onSubmit={placeOrder}>
+        <form key={user?.email ?? "guest"} className="form-panel [max-width:520px] [margin:40px_auto_90px] [&_label]:[display:block] [&_label]:[margin:17px_0_8px] [&_label]:[font-size:12px] [&_input]:[width:100%] [&_input]:[padding:14px] [&_input]:[border:1px_solid_#ddd] [&_textarea]:[width:100%] [&_textarea]:[padding:14px] [&_textarea]:[border:1px_solid_#ddd] [&_.btn]:[width:100%] [&_.btn]:[margin-top:20px]" onSubmit={placeOrder}>
           <div className="notice [background:#fff7e5] [border:1px_solid_#f1dfb6] [padding:13px_18px] [font-size:12px] [margin-bottom:20px]">
             UI preview: orders are saved in this browser only. No payment is processed.
           </div>

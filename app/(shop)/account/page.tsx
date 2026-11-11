@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, LogOut, Mail, Phone, CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { Loader2, LayoutDashboard, LogOut, Mail, Phone, CalendarDays } from "lucide-react";
 
 import { useStore } from "@/components/store";
 import { money } from "@/lib/data";
@@ -75,6 +76,14 @@ export default function Account() {
                 </span>
               </div>
             </div>
+            {user.role === "admin" && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 bg-[#781d2d] px-6 py-3 text-[11px] font-semibold uppercase tracking-[1.8px] text-white transition-colors hover:bg-[#9b3345]"
+              >
+                <LayoutDashboard size={15} aria-hidden="true" /> Admin dashboard
+              </Link>
+            )}
             <button
               type="button"
               onClick={handleSignOut}
