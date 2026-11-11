@@ -14,9 +14,11 @@ import {
   X,
   ChevronDown,
   RotateCcw,
+  Banknote,
 } from "lucide-react";
 
 import { mainNav } from "@/lib/navigation";
+import { paymentMethods, promiseText } from "@/lib/store-policy";
 import { useStore } from "./store";
 
 const navItemClass =
@@ -38,7 +40,7 @@ export function Header() {
    * menu, so keep it closed until the pointer leaves that item.
    */
   const [megaSuppressed, setMegaSuppressed] = useState(false);
-  const { items, wishlist } = useStore();
+  const { items, wishlist, user } = useStore();
 
   function closeMenus() {
     setMenu(false);
@@ -70,7 +72,8 @@ export function Header() {
         className={menu ? "announcement menu-active [text-align:center] [background:#781d2d] [color:#fff] [font-size:10px] [letter-spacing:2px] [padding:11px] max-[850px]:[overflow:hidden] max-[850px]:[padding:9px_10px] max-[850px]:[font-size:8px] max-[850px]:[letter-spacing:1px] max-[850px]:[line-height:18px] max-[850px]:[white-space:nowrap] max-[850px]:[&.menu-active]:[display:none]" : "announcement [text-align:center] [background:#781d2d] [color:#fff] [font-size:10px] [letter-spacing:2px] [padding:11px] max-[850px]:[overflow:hidden] max-[850px]:[padding:9px_10px] max-[850px]:[font-size:8px] max-[850px]:[letter-spacing:1px] max-[850px]:[line-height:18px] max-[850px]:[white-space:nowrap] max-[850px]:[&.menu-active]:[display:none]"}
         aria-hidden={menu}
       >
-        FREE SHIPPING ON ORDERS OVER PKR 2,000 &nbsp; • &nbsp; EXPLORE NEW ARRIVALS
+        {promiseText.freeDelivery.toUpperCase()} &nbsp; • &nbsp; CASH ON DELIVERY &nbsp; • &nbsp;{" "}
+        {promiseText.exchange.toUpperCase()}
       </div>
       <header className={menu ? "header menu-open [background:#fffaf8] [position:sticky] [top:0] [z-index:40] [border-bottom:1px_solid_#eee] max-[850px]:[&.menu-open]:[z-index:60]" : "header [background:#fffaf8] [position:sticky] [top:0] [z-index:40] [border-bottom:1px_solid_#eee] max-[850px]:[&.menu-open]:[z-index:60]"}>
         <div className="header-top [height:76px] [max-width:none] [margin:auto] [display:flex] [align-items:center] [justify-content:space-between] [padding:0_5%] max-[850px]:[height:75px] max-[850px]:[display:grid] max-[850px]:[grid-template-columns:minmax(36px,_1fr)_auto_minmax(0,_1fr)] max-[850px]:[gap:8px] max-[850px]:[padding:0_16px] max-[850px]:[&_>_.mobile]:[display:flex] max-[850px]:[&_>_.mobile]:[align-items:center] max-[850px]:[&_>_.mobile]:[justify-content:center] max-[850px]:[&_>_.mobile]:[width:36px] max-[850px]:[&_>_.mobile]:[height:40px] max-[850px]:[&_>_.mobile]:[justify-self:start] max-[850px]:[&_>_.logo]:[justify-self:center] max-[430px]:[grid-template-columns:minmax(32px,_1fr)_auto_minmax(0,_1fr)] max-[430px]:[gap:4px] max-[430px]:[padding:0_10px]">
@@ -94,8 +97,18 @@ export function Header() {
             <button aria-label="Search" onClick={() => setSearch(!search)}>
               <Search />
             </button>
-            <Link aria-label="Account" href="/account">
+            <Link
+              aria-label={user ? `Account: ${user.name}` : "Sign in"}
+              title={user ? user.name : "Sign in"}
+              href="/account"
+            >
               <UserRound />
+              {user && (
+                <span
+                  aria-hidden="true"
+                  className="[position:absolute] [right:-3px] [bottom:2px] [width:9px] [height:9px] [border-radius:50%] [background:#781d2d] [border:2px_solid_#fffaf8]"
+                />
+              )}
             </Link>
             <Link aria-label="Wishlist" href="/wishlist">
               <Heart />
@@ -239,11 +252,15 @@ export function Header() {
           <div className="mobile-menu-benefits [display:none] max-[850px]:[display:grid] max-[850px]:[gap:16px] max-[850px]:[margin-top:auto] max-[850px]:[padding:22px_27px_max(22px,_env(safe-area-inset-bottom))] max-[850px]:[background:#f5f2f0] max-[850px]:[color:#443a3a] max-[850px]:[&_>_div]:[display:flex] max-[850px]:[&_>_div]:[align-items:center] max-[850px]:[&_>_div]:[gap:14px] max-[850px]:[&_>_div]:[font-size:13px] max-[850px]:[&_>_div]:[letter-spacing:0.2px] max-[850px]:[&_svg]:[flex:0_0_auto] max-[850px]:[&_svg]:[color:#781d2d] max-[850px]:[&_svg]:[stroke-width:1.6]" aria-label="Shopping benefits">
             <div>
               <Truck size={20} aria-hidden="true" />
-              <span>Free shipping over PKR 2,000</span>
+              <span>{promiseText.freeDelivery}</span>
             </div>
             <div>
               <RotateCcw size={20} aria-hidden="true" />
-              <span>Easy returns</span>
+              <span>{promiseText.exchange}</span>
+            </div>
+            <div>
+              <Banknote size={20} aria-hidden="true" />
+              <span>{promiseText.cashOnDelivery}</span>
             </div>
           </div>
         </nav>
@@ -351,8 +368,15 @@ export function Footer() {
           {newsletterMessage && <p role="status">{newsletterMessage}</p>}
         </div>
       </div>
-      <div className="footer-bottom [border-top:1px_solid_#544b47] [margin-top:50px] [padding-top:20px] [font-size:11px] [color:#b7aaa4] [display:flex] [justify-content:space-between] [&_a]:[margin:0]">
-        © 2026 Dirndl Wear demo storefront · Unofficial educational frontend
+      <div className="footer-bottom [border-top:1px_solid_#544b47] [margin-top:50px] [padding-top:20px] [font-size:11px] [color:#b7aaa4] [display:flex] [justify-content:space-between] [&_a]:[margin:0] [flex-wrap:wrap] [align-items:center] [gap:14px]">
+        <span>© 2026 Dirndl Wear demo storefront · Unofficial educational frontend</span>
+        <ul aria-label="Payment methods" className="m-0 flex list-none flex-wrap gap-2 p-0">
+          {paymentMethods.map((method) => (
+            <li key={method.id} className="border border-[#6e5a57] px-2.5 py-1 text-[11px] text-[#d9c3c3]">
+              {method.label}
+            </li>
+          ))}
+        </ul>
         <Link href="/admin">Admin Dashboard</Link>
       </div>
     </footer>

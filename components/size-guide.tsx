@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef } from "react";
+import { forwardRef, useId, useImperativeHandle, useRef } from "react";
 import { X } from "lucide-react";
 
 import type { Product } from "@/lib/data";
@@ -12,6 +12,7 @@ export type SizeGuideHandle = { open: () => void };
 export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
   function SizeGuide({ product }, ref) {
     const dialog = useRef<HTMLDialogElement>(null);
+    const titleId = useId();
     useImperativeHandle(ref, () => ({ open: () => dialog.current?.showModal() }));
     const chart = sizeChartFor(product);
     const close = () => dialog.current?.close();
@@ -19,7 +20,7 @@ export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
     return (
       <dialog
         ref={dialog}
-        aria-labelledby="size-guide-title"
+        aria-labelledby={titleId}
         // A click on the backdrop lands on the <dialog> itself.
         onClick={(event) => {
           if (event.target === dialog.current) close();
@@ -29,7 +30,7 @@ export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
         <div className="p-6 sm:p-8">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
-              <h2 id="size-guide-title" className="m-0 font-serif text-[28px] text-[#781d2d]">
+              <h2 id={titleId} className="m-0 font-serif text-[28px] text-[#781d2d]">
                 Size guide
               </h2>
               <p className="m-0 mt-1 text-sm text-[#786565]">{product.name}</p>

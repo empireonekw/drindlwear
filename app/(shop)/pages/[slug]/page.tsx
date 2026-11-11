@@ -1,5 +1,13 @@
 import { notFound } from "next/navigation";
 
+import { money } from "@/lib/data";
+import { paymentMethods, promiseText, storePolicy } from "@/lib/store-policy";
+
+const free = money(storePolicy.freeDeliveryFrom);
+const fee = money(storePolicy.deliveryFee);
+const exchangeDays = storePolicy.exchangeDays;
+const paymentList = paymentMethods.map((method) => method.label).join(", ");
+
 type InfoSection = {
   heading: string;
   paragraphs?: string[];
@@ -16,60 +24,64 @@ type InfoPage = {
 const infoPages: Record<string, InfoPage> = {
   "shipping & delivery": {
     title: "Shipping & Delivery",
-    intro:
-      "Delivery options can depend on the destination, the items in your order, and the shipping service selected at checkout.",
+    intro: `We deliver across Pakistan. Orders of ${free} or more ship free; smaller orders pay a flat ${fee}.`,
     notice:
-      "This demo does not define shipping regions, delivery estimates, carriers, shipping charges, or dispatch cut-off times. Confirm those details at checkout with the actual retailer before ordering.",
+      "Courier partners and dispatch cut-off times will be confirmed before the store opens for orders.",
     sections: [
       {
-        heading: "Order confirmation",
-        paragraphs: [
-          "After placing an order with a live retailer, check the confirmation details and make sure the delivery address is correct. If anything is wrong, contact the retailer promptly; an address change may not be possible once a parcel has shipped.",
+        heading: "Delivery cost and time",
+        bullets: [
+          `${promiseText.freeDelivery} (after any set savings).`,
+          `${fee} flat delivery fee on orders below ${free}.`,
+          `${promiseText.deliveryTime} after your order is confirmed.`,
         ],
       },
       {
-        heading: "Dispatch and delivery updates",
+        heading: "Paying for your order",
         paragraphs: [
-          "If tracking is provided, use the carrier link in the dispatch notification for the latest scan and delivery information. Tracking availability and timing depend on the service used.",
-          "Delivery dates are estimates unless the retailer explicitly confirms a guaranteed service. Weather, peak periods, customs checks, and carrier disruption can affect transit.",
+          `You can pay by ${paymentList}. With Cash on Delivery, please have the amount ready when the courier arrives. Bank-transfer orders ship once the payment is confirmed.`,
+        ],
+      },
+      {
+        heading: "Order confirmation",
+        paragraphs: [
+          "Check your confirmation and make sure the delivery address is correct. If anything is wrong, contact us promptly; an address change may not be possible once a parcel has shipped.",
         ],
       },
       {
         heading: "When a parcel is delayed or arrives damaged",
         bullets: [
-          "Check the latest tracking update and any delivery notice left by the carrier.",
+          "Check the latest tracking update and any delivery notice left by the courier.",
           "Keep the packaging and take clear photos if the parcel or item is damaged.",
-          "Contact the retailer using its published support channel and include your order number.",
+          "Contact us with your order number.",
         ],
       },
     ],
   },
   returns: {
-    title: "Returns",
-    intro:
-      "We want you to feel confident choosing a piece. Always review the actual retailer's return terms before you place an order.",
+    title: "Exchanges & Returns",
+    intro: `Wrong size? You can exchange an item within ${exchangeDays} days of delivery.`,
     notice:
-      "This demo does not set a return window, refund timeline, return address, shipping-fee policy, or product exclusions. These terms must be confirmed and published by the retailer before real sales begin.",
+      "The return address and refund timing will be published before the store opens for orders.",
     sections: [
       {
-        heading: "Before requesting a return",
+        heading: `${exchangeDays}-day size exchange`,
         bullets: [
-          "Check the order confirmation and the retailer's current return policy for eligibility and deadlines.",
-          "Keep the item, labels, and packaging in the condition required by that policy.",
-          "Contact the retailer first and follow its instructions; do not send a parcel to an unverified address.",
+          `Contact us within ${exchangeDays} days of the day your order arrives.`,
+          "Tell us your order number and the size you need.",
+          "Keep the item, labels and packaging until the exchange is complete.",
         ],
       },
       {
-        heading: "Refunds and exchanges",
+        heading: "Choosing the right size first",
         paragraphs: [
-          "Once an authorised return is received, the retailer should explain how it assesses the item and how it processes an eligible refund or exchange. The applicable method, timing, and any costs must be stated in the retailer's terms.",
-          "If a refund is approved, ask the retailer which payment method will be credited and how to follow up if it does not appear within the stated timeframe.",
+          "Every product page has fit notes and a size guide with body measurements. Comparing your measurements before ordering is the quickest way to avoid an exchange.",
         ],
       },
       {
         heading: "Something is wrong with your order?",
         paragraphs: [
-          "If an item is damaged, incorrect, or missing, contact the retailer promptly with your order number and clear photos where helpful. Keep all packaging until the issue is resolved.",
+          "If an item is damaged, incorrect, or missing, contact us promptly with your order number and clear photos where helpful. Keep all packaging until the issue is resolved.",
         ],
       },
     ],
@@ -88,7 +100,7 @@ const infoPages: Record<string, InfoPage> = {
       {
         heading: "Where can I find delivery costs and timing?",
         paragraphs: [
-          "Delivery services, costs, and estimated arrival dates should be shown by the retailer before you confirm an order. They can vary by destination and service.",
+          `Delivery is free on orders of ${free} or more and ${fee} below that. Orders arrive in ${storePolicy.deliveryTime}. Your cart shows how much more you need for free delivery.`,
         ],
       },
       {
@@ -100,7 +112,7 @@ const infoPages: Record<string, InfoPage> = {
       {
         heading: "How do I return an item?",
         paragraphs: [
-          "Check the retailer's return policy and contact its support channel before shipping anything back. This demo does not define return eligibility or a return address.",
+          `You can exchange an item for another size within ${exchangeDays} days of delivery. Contact us with your order number before sending anything back.`,
         ],
       },
       {
@@ -301,7 +313,14 @@ const infoPages: Record<string, InfoPage> = {
 };
 
 function normalizeSlug(slug: string) {
-  return slug
+  // Next passes the segment still URL-encoded ("shipping-%26-delivery").
+  let decoded = slug;
+  try {
+    decoded = decodeURIComponent(slug);
+  } catch {
+    // Malformed encoding: fall back to the raw segment.
+  }
+  return decoded
     .toLowerCase()
     .replaceAll("-", " ")
     .replace(/\s+/g, " ")

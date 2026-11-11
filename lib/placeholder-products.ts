@@ -1,4 +1,5 @@
 import { Product, sumSizeStock } from "./data";
+import type { OutfitSet } from "./sets";
 
 /**
  * UI-ONLY PLACEHOLDERS — not a seed and not connected to any database.
@@ -204,4 +205,32 @@ export const placeholderProducts: Product[] = [
     },
     { "32": 0, "34": 0, "36": 1, "38": 2, "40": 2, "42": 1, "44": 1 },
   ),
+];
+
+/** UI-only placeholder outfit sets, built from the products above. */
+export const placeholderSets: OutfitSet[] = [
+  {
+    id: "festival-rose",
+    name: "Festival Rose Set",
+    description: "Dirndl, lace blouse and felt handbag: everything for a festival night.",
+    productIds: [1, 4, 8],
+    discountPercent: 10,
+    occasions: ["festival"],
+  },
+  {
+    id: "wedding-guest",
+    name: "Wedding Guest Set",
+    description: "A long sage dirndl with a blouse and a fitted wool jacket for cooler evenings.",
+    productIds: [2, 4, 7],
+    discountPercent: 10,
+    occasions: ["wedding-guest"],
+  },
+  {
+    id: "couples",
+    name: "Couples' Matching Set",
+    description: "Her dirndl and his lederhosen and shirt, chosen to belong together.",
+    productIds: [1, 5, 6],
+    discountPercent: 8,
+    occasions: ["couples", "festival"],
+  },
 ];

@@ -123,13 +123,48 @@ export function sumSizeStock(sizeStock: Record<string, number>) {
   return Object.values(sizeStock).reduce((total, qty) => total + qty, 0);
 }
 
-export type CartItem = { id: number; qty: number; size?: string };
+/**
+ * One cart line: a product in one size. Lines added as part of an outfit set
+ * carry that set's id, so the set discount can be worked out.
+ */
+export type CartItem = { id: number; qty: number; size?: string; setId?: string };
 
 export const sameCartLine = (
-  item: { id: number; size?: string },
+  item: { id: number; size?: string; setId?: string },
   id: number,
   size?: string,
-) => item.id === id && (item.size ?? "") === (size ?? "");
+  setId?: string,
+) =>
+  item.id === id &&
+  (item.size ?? "") === (size ?? "") &&
+  (item.setId ?? "") === (setId ?? "");
+
+const sumQty = (lines: CartItem[]) => lines.reduce((total, line) => total + line.qty, 0);
+
+/**
+ * The most units one cart line may hold: what is left of its size (and of
+ * the product overall) after the cart's other lines for the same product,
+ * capped at 50 per product.
+ */
+export function lineLimit(
+  cart: CartItem[],
+  product: Product,
+  line: { size?: string; setId?: string },
+) {
+  const others = cart.filter(
+    (item) => item.id === product.id && !sameCartLine(item, product.id, line.size, line.setId),
+  );
+  const otherSameSize = sumQty(others.filter((item) => (item.size ?? "") === (line.size ?? "")));
+  const otherAll = sumQty(others);
+  return Math.max(
+    0,
+    Math.min(
+      availableStock(product, line.size) - otherSameSize,
+      product.stock - otherAll,
+      50 - otherAll,
+    ),
+  );
+}
 
 // Formats as "Rs 14,990". The "en-PK" currency format differs between Node
 // and browsers ("Rs 14,990.00" vs "Rs 14,990"), which broke hydration, so the

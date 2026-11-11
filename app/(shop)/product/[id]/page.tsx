@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronDown, Heart, Ruler, RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import { Banknote, ChevronDown, Heart, Ruler, RotateCcw, Truck } from "lucide-react";
 
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductGrid } from "@/components/product";
@@ -19,6 +19,8 @@ import {
   requiresSize,
 } from "@/lib/data";
 import { completeTheLook, similarProducts } from "@/lib/recommendations";
+import { setPricing } from "@/lib/sets";
+import { promiseText, storePolicy } from "@/lib/store-policy";
 
 const primaryButton =
   "inline-flex items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#9b3345] disabled:cursor-not-allowed disabled:bg-[#786565]";
@@ -39,7 +41,7 @@ export default function ProductPage() {
 }
 
 function ProductView({ product }: { product: Product }) {
-  const { products, add, toggleWish, wishlist } = useStore();
+  const { products, sets, add, toggleWish, wishlist } = useStore();
   const [size, setSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -60,6 +62,10 @@ function ProductView({ product }: { product: Product }) {
   const audience = audiences.find((entry) => entry.value === product.audience);
   const categorySlug = product.category.toLowerCase().replaceAll(" ", "-");
   const look = completeTheLook(product, products);
+  const inSets = sets.flatMap((set) => {
+    const pricing = set.productIds.includes(product.id) ? setPricing(set, products) : null;
+    return pricing?.available ? [{ set, pricing }] : [];
+  });
   const similar = similarProducts(product, products, look);
 
   // Mobile: show the sticky bar once the main "Add to cart" button scrolls away.
@@ -293,13 +299,53 @@ function ProductView({ product }: { product: Product }) {
             </p>
           )}
 
+          {/* Sets that include this piece */}
+          {inSets.length > 0 && (
+            <div className="mt-6 border border-[#eadfdb] bg-white p-4">
+              <p className="m-0 text-[11px] uppercase tracking-[1.6px] text-[#786565]">Also available as a set</p>
+              <ul className="m-0 mt-2 grid list-none gap-3 p-0">
+                {inSets.map(({ set, pricing }) => (
+                  <li key={set.id}>
+                    <Link href={`/sets/${set.id}`} className="group flex items-center gap-3">
+                      <span className="flex shrink-0 -space-x-3">
+                        {pricing.pieces.slice(0, 3).map((piece) => (
+                          <img key={piece.id} src={piece.image} alt="" className="h-12 w-10 border-2 border-white object-cover" />
+                        ))}
+                      </span>
+                      <span className="min-w-0 flex-1 text-sm">
+                        <span className="block font-semibold group-hover:text-[#781d2d] group-hover:underline">{set.name}</span>
+                        <span className="text-[#5e5050]">
+                          {pricing.pieces.length} pieces for {money(pricing.price)}{" "}
+                          <span className="text-[#1f6b44]">· save {money(pricing.saving)}</span>
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Delivery promises */}
           <ul className="m-0 mt-6 grid list-none gap-3 border-y border-[#eee] p-0 py-5 text-sm">
-            <li className="flex items-center gap-3"><Truck size={19} className="text-[#781d2d]" aria-hidden="true" /> Delivery in 2–5 business days*</li>
-            <li className="flex items-center gap-3"><RotateCcw size={19} className="text-[#781d2d]" aria-hidden="true" /> Easy returns*</li>
-            <li className="flex items-center gap-3"><ShieldCheck size={19} className="text-[#781d2d]" aria-hidden="true" /> Secure shopping</li>
+            <li className="flex items-center gap-3">
+              <Truck size={19} className="shrink-0 text-[#781d2d]" aria-hidden="true" />
+              <span>
+                {promiseText.deliveryTime} ·{" "}
+                {product.price >= storePolicy.freeDeliveryFrom ? (
+                  <strong className="text-[#1f6b44]">free delivery on this item</strong>
+                ) : (
+                  `free delivery over ${money(storePolicy.freeDeliveryFrom)}`
+                )}
+              </span>
+            </li>
+            <li className="flex items-center gap-3">
+              <RotateCcw size={19} className="shrink-0 text-[#781d2d]" aria-hidden="true" /> {promiseText.exchange}
+            </li>
+            <li className="flex items-center gap-3">
+              <Banknote size={19} className="shrink-0 text-[#781d2d]" aria-hidden="true" /> {promiseText.cashOnDelivery}
+            </li>
           </ul>
-          <p className="m-0 mt-2 text-[11px] text-[#8a7c7c]">*Demo information; not a real store or shipping promise.</p>
 
           {/* More information */}
           <div className="mt-6 divide-y divide-[#eee] border-b border-[#eee]">
@@ -340,7 +386,12 @@ function ProductView({ product }: { product: Product }) {
                 Delivery &amp; returns
                 <ChevronDown size={18} aria-hidden="true" className="text-[#786565] transition group-open:rotate-180" />
               </summary>
-              <p className="mb-0 mt-3 text-sm leading-7 text-[#5e5050]">
+              <ul className="m-0 mt-3 list-disc pl-5 text-sm leading-7 text-[#5e5050]">
+                <li>{promiseText.deliveryTime} across Pakistan.</li>
+                <li>{promiseText.freeDelivery}; {promiseText.deliveryFee}.</li>
+                <li>{promiseText.exchange}, counted from the day it arrives.</li>
+              </ul>
+              <p className="mb-0 mt-2 text-sm leading-7 text-[#5e5050]">
                 See{" "}
                 <Link href="/pages/shipping-&-delivery" className="underline underline-offset-4">shipping &amp; delivery</Link>{" "}
                 and{" "}

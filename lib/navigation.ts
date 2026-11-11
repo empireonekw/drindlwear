@@ -59,6 +59,7 @@ export const mainNav: NavItem[] = [
       {
         title: "Finish the look",
         links: [
+          { label: "Complete sets", href: "/sets" },
           { label: "Blouses", href: "/collections/blouses" },
           { label: "Jackets", href: "/collections/women-jackets" },
           { label: "Accessories", href: "/collections/accessories" },
@@ -67,8 +68,8 @@ export const mainNav: NavItem[] = [
       },
     ],
     feature: {
-      title: "New dirndl",
-      href: "/collections/dirndl",
+      title: "Complete sets",
+      href: "/sets",
       image: "/images/asset-06.webp",
     },
   },
@@ -88,6 +89,7 @@ export const mainNav: NavItem[] = [
       {
         title: "Together",
         links: [
+          { label: "Couples' matching set", href: "/sets/couples" },
           { label: "Couples' matching outfits", href: "/collections/occasion-couples" },
           { label: "Wedding guest", href: "/collections/occasion-wedding-guest" },
         ],

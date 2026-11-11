@@ -8,7 +8,7 @@
   A traditional-fashion storefront with MongoDB-backed commerce APIs and an admin dashboard.
 </p>
 
-> **Project status:** UI-only preview. The backend (API routes, MongoDB models, auth, seed scripts) has been removed while the UI is redesigned. Products come from `lib/placeholder-products.ts`; cart, wishlist, orders and settings are kept in the browser's localStorage.
+> **Project status:** Customer accounts (sign up, sign in, sign out) are real and stored in MongoDB. Everything else is still a UI preview: products come from `lib/placeholder-products.ts`, and the cart, wishlist, orders and settings are kept in the browser's localStorage.
 
 ## Overview
 
@@ -50,7 +50,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). `.env.local` holds `MONGODB_URI` for the upcoming backend; nothing reads it yet.
+Open [http://localhost:3000](http://localhost:3000). `.env.local` must hold `MONGODB_URI`; the database named in the URI is used (or set `MONGODB_DB`). The `users` and `sessions` collections and their indexes are created on first use.
 
 ### Production build
 
@@ -70,7 +70,10 @@ npm start
 | `/wishlist` | Saved products |
 | `/cart` | Shopping cart |
 | `/checkout` | Checkout; orders are saved in this browser only |
-| `/account` | Preview sign-in and order history (no real accounts) |
+| `/account` | Profile and order history (redirects to sign-in) |
+| `/account/login` | Sign in |
+| `/account/register` | Create an account |
+| `/api/auth/signup`, `/login`, `/logout`, `/me` | Account API (MongoDB, httpOnly session cookie) |
 | `/club` | Dirndl Wear Club page |
 | `/pages/our-story` | Brand story |
 | `/pages/[slug]` | Informational demo pages |
@@ -109,7 +112,8 @@ The full logo is in `public/brand/dirndl-wear-logo1.png`; the compact monogram i
 
 ## Current limitations
 
-- **No backend:** there are no API routes, database, accounts, payments, or email. Admin changes to products reset on reload.
+- **Partial backend:** only accounts use MongoDB. Products, orders, payments and email are not connected yet, and admin changes to products reset on reload.
+- **Admin not protected:** users have a `role` field (`customer` by default), but `/admin` doesn't check it yet.
 - **Placeholder data:** `lib/placeholder-products.ts` is for UI work only; delete it once real data is connected.
 - **Asset review required:** Confirm image ownership and commercial usage rights before deployment.
 - **Unofficial project:** This demonstration is not affiliated with the original Krüger site.

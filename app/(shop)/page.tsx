@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { ProductGrid } from "@/components/product";
 import { useStore } from "@/components/store";
+import { TrustBar } from "@/components/trust-bar";
 
 const categories = [
   { name: "WOMEN", image: "/images/asset-06.webp", slug: "women" },
@@ -38,6 +39,8 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      <TrustBar />
 
       <section className="container section [max-width:1360px] [margin:0_auto] [padding-left:32px] [padding-right:32px] max-[520px]:[padding-left:17px] max-[520px]:[padding-right:17px] [padding-top:70px] [padding-bottom:70px] max-[520px]:[padding-top:45px] max-[520px]:[padding-bottom:45px]">
         <h2 className="section-title [text-align:center] [font:normal_34px_Georgia,serif] [letter-spacing:1px] [margin:0_0_14px] max-[520px]:[font-size:29px] [color:#781d2d]">Shop by Category</h2>

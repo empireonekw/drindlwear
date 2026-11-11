@@ -177,12 +177,13 @@ export default function Orders() {
               {selectedOrder.items?.length ? (
                 <div className="order-items-list [border-top:1px_solid_#eee8e7]">
                   {selectedOrder.items.map((item) => (
-                    <div className="order-item-row [display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [padding:14px_2px] [border-bottom:1px_solid_#eee8e7] [font-size:13px] [&_div]:[display:flex] [&_div]:[flex-direction:column] [&_div]:[gap:5px] [&_div_span]:[color:#817576] [&_div_span]:[font-size:12px] [&_>_strong]:[white-space:nowrap]" key={`${item.productId}-${item.size ?? ""}`}>
+                    <div className="order-item-row [display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [padding:14px_2px] [border-bottom:1px_solid_#eee8e7] [font-size:13px] [&_div]:[display:flex] [&_div]:[flex-direction:column] [&_div]:[gap:5px] [&_div_span]:[color:#817576] [&_div_span]:[font-size:12px] [&_>_strong]:[white-space:nowrap]" key={`${item.productId}-${item.size ?? ""}-${item.setName ?? ""}`}>
                       <div>
                         <strong>{item.name}</strong>
                         <span>
                           {item.size ? `Size ${item.size} · ` : ""}Qty {item.qty} × {money(item.price)}
                         </span>
+                        {item.setName && <span>Part of {item.setName}</span>}
                       </div>
                       <strong>{money(item.qty * item.price)}</strong>
                     </div>
@@ -193,6 +194,24 @@ export default function Orders() {
                   Item details are unavailable for this order.
                 </p>
               )}
+              {selectedOrder.deliveryFee !== undefined && (
+                <p className="mt-4 flex justify-between text-sm">
+                  <span>Delivery</span>
+                  <strong>{selectedOrder.deliveryFee === 0 ? "Free" : money(selectedOrder.deliveryFee)}</strong>
+                </p>
+              )}
+              {selectedOrder.paymentMethod && (
+                <p className="mt-2 flex justify-between text-sm">
+                  <span>Payment</span>
+                  <strong>{selectedOrder.paymentMethod} · {selectedOrder.paymentStatus}</strong>
+                </p>
+              )}
+              {selectedOrder.discount ? (
+                <p className="mt-4 flex justify-between text-sm text-[#1f6b44]">
+                  <span>Set savings</span>
+                  <strong>−{money(selectedOrder.discount)}</strong>
+                </p>
+              ) : null}
               <div className="order-total-row [display:flex] [justify-content:space-between] [margin-top:16px] [padding-top:17px] [border-top:1px_solid_#dfd3d1] [color:#35171e] [font-size:16px] [&_strong]:[font-size:18px]">
                 <span>Order total</span>
                 <strong>{money(selectedOrder.total)}</strong>

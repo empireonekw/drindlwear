@@ -3,137 +3,202 @@
 import Link from "next/link";
 
 import { useStore } from "@/components/store";
-import { availableStock, money, requiresSize } from "@/lib/data";
+import { CartItem, lineLimit, money, Product, requiresSize } from "@/lib/data";
+import { setDiscounts, totalSetDiscount } from "@/lib/sets";
+import { deliveryCharge, storePolicy } from "@/lib/store-policy";
+
+const primaryButton =
+  "inline-flex w-full items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#9b3345] disabled:cursor-not-allowed disabled:bg-[#786565]";
+
+type Row = CartItem & { product: Product };
 
 export default function Cart() {
-  const { items, products, quantity, remove } = useStore();
-  const rows = items
-    .map((item) => ({
-      ...item,
-      product: products.find((product) => product.id === item.id),
-    }))
-    .filter((item) => item.product);
-  const total = rows.reduce(
-    (sum, item) => sum + item.qty * (item.product?.price || 0),
-    0,
-  );
-  // Stock is per product, so add up every size of the same product.
-  const productQty = (id: number) =>
-    rows.reduce((sum, row) => (row.id === id ? sum + row.qty : sum), 0);
-  const missingSize = (row: (typeof rows)[number]) =>
-    Boolean(row.product && requiresSize(row.product.category) && !row.size);
-  /** Units of this line's size still available, after other sizes in the cart. */
-  const lineAvailable = (row: (typeof rows)[number]) =>
-    row.product
-      ? Math.min(
-          availableStock(row.product, row.size),
-          row.product.stock - (productQty(row.id) - row.qty),
-        )
-      : 0;
-  const inventoryIssue = rows.some(
-    (row) => !row.product || row.qty > lineAvailable(row) || missingSize(row),
+  const { items, products, sets, quantity, remove } = useStore();
+  const rows: Row[] = items.flatMap((item) => {
+    const product = products.find((entry) => entry.id === item.id);
+    return product ? [{ ...item, product }] : [];
+  });
+
+  const subtotal = rows.reduce((sum, row) => sum + row.qty * row.product.price, 0);
+  const discounts = setDiscounts(items, products, sets);
+  const discount = totalSetDiscount(discounts);
+  const goods = subtotal - discount;
+  const delivery = deliveryCharge(goods);
+  const total = goods + delivery;
+  const toFreeDelivery = Math.max(0, storePolicy.freeDeliveryFrom - goods);
+  const freeProgress = Math.min(100, Math.round((goods / storePolicy.freeDeliveryFrom) * 100));
+
+  const limit = (row: Row) => lineLimit(items, row.product, row);
+  const missingSize = (row: Row) => requiresSize(row.product.category) && !row.size;
+  const inventoryIssue = rows.some((row) => row.qty > limit(row) || missingSize(row));
+
+  // Set pieces are shown together under their set; everything else below.
+  const setGroups = discounts.map((entry) => ({
+    ...entry,
+    rows: rows.filter((row) => row.setId === entry.set.id),
+  }));
+  const looseRows = rows.filter(
+    (row) => !row.setId || !sets.some((set) => set.id === row.setId),
   );
 
+  const renderRow = (row: Row) => {
+    const { id, qty, size, setId, product } = row;
+    const available = limit(row);
+    const sizeNote = size ? ` in size ${size}` : "";
+    return (
+      <li key={`${id}-${size ?? ""}-${setId ?? ""}`} className="flex gap-5 border-b border-[#eee] py-5 max-[520px]:gap-3">
+        <img src={product.image} alt="" className="h-[135px] w-[100px] shrink-0 object-cover max-[520px]:h-[110px] max-[520px]:w-[82px]" />
+        <div className="min-w-0 flex-1">
+          <Link href={`/product/${id}`} className="font-semibold hover:text-[#781d2d]">
+            {product.name}
+          </Link>
+          <p className="m-0 mt-1 text-sm text-[#8a7c7c]">
+            {product.color}
+            {size ? ` · Size ${size}` : ""}
+          </p>
+          {missingSize(row) ? (
+            <p role="alert" className="m-0 mt-1 text-[13px] text-[#a32232]">
+              No size chosen.{" "}
+              <Link className="underline" href={`/product/${id}`}>Choose a size</Link> and remove this line.
+            </p>
+          ) : available <= 0 ? (
+            <p role="alert" className="m-0 mt-1 text-[13px] text-[#a32232]">Out of stock{sizeNote}</p>
+          ) : qty > available ? (
+            <p role="alert" className="m-0 mt-1 text-[13px] text-[#a32232]">
+              Only {available} left{sizeNote}. Reduce quantity to continue.
+            </p>
+          ) : available <= 3 ? (
+            <p className="m-0 mt-1 text-[13px] text-[#786565]">Only {available} left{sizeNote}</p>
+          ) : null}
+          <div className="mt-3 flex items-center gap-4">
+            <div className="flex items-center border border-[#cfc3bf]">
+              <button
+                type="button"
+                aria-label={`Decrease ${product.name} quantity`}
+                onClick={() => quantity(id, qty - 1, size, setId)}
+                className="h-9 w-9"
+              >
+                −
+              </button>
+              <span className="min-w-6 text-center text-sm">{qty}</span>
+              <button
+                type="button"
+                aria-label={`Increase ${product.name} quantity`}
+                disabled={qty >= available}
+                onClick={() => quantity(id, qty + 1, size, setId)}
+                className="h-9 w-9 disabled:text-[#c9bdb9]"
+              >
+                +
+              </button>
+            </div>
+            <button type="button" onClick={() => remove(id, size, setId)} className="text-xs underline underline-offset-2">
+              Remove
+            </button>
+          </div>
+        </div>
+        <strong className="shrink-0 text-sm">{money(product.price * qty)}</strong>
+      </li>
+    );
+  };
+
   return (
-    <div className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]">
-      <h1 className="page-heading [text-align:center] [font:42px_Georgia,serif] [margin:35px_0_14px] [color:#781d2d]">Cart</h1>
+    <div className="mx-auto max-w-[1360px] px-8 max-[520px]:px-4">
+      <h1 className="m-0 mt-9 text-center font-serif text-[42px] font-normal text-[#781d2d]">Cart</h1>
       {!rows.length ? (
-        <div className="empty [text-align:center] [padding:100px_0] [color:#777]">
+        <div className="py-24 text-center text-[#777]">
           <p>Your cart is empty.</p>
-          <Link href="/collections/all" className="btn [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#9b3345] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]">
-            CONTINUE SHOPPING
+          <Link href="/collections/all" className={`${primaryButton} mt-4 w-auto`}>
+            Continue shopping
           </Link>
         </div>
       ) : (
-        <div className="cart-layout [display:grid] [grid-template-columns:minmax(0,_2fr)_minmax(0,_1fr)] [gap:50px] [padding:40px_0_90px] max-[850px]:[grid-template-columns:minmax(0,_1fr)] [&_>_*]:[min-width:0] max-[850px]:[&_>_*]:[min-width:0]">
+        <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-12 pb-24 pt-10 max-[850px]:grid-cols-1">
           <div>
-            {rows.map(({ id, qty, size, product }) => (
-              <div className="cart-item [display:flex] [gap:20px] [padding:20px_0] [border-bottom:1px_solid_#eee] [&_img]:[width:100px] [&_img]:[height:135px] [&_img]:[object-fit:cover] [&_.info]:[flex:1] motion-safe:[&_img]:[transition:transform_650ms_cubic-bezier(0.2,_0.7,_0.2,_1)]" key={`${id}-${size ?? ""}`}>
-                <img src={product!.image} alt={product!.name} />
-                <div className="info">
-                  <Link href={`/product/${id}`}>
-                    <strong>{product!.name}</strong>
+            {setGroups.map((group) => (
+              <section
+                key={group.set.id}
+                aria-label={group.set.name}
+                className="mb-6 border border-[#eadfdb] bg-white px-5 pt-4 max-[520px]:px-3"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[#eee] pb-3">
+                  <Link href={`/sets/${group.set.id}`} className="font-serif text-[22px] text-[#781d2d] hover:underline">
+                    {group.set.name}
                   </Link>
-                  <p className="muted [color:#999]">
-                    {product!.color}
-                    {size ? ` · Size ${size}` : ""}
-                  </p>
-                  {missingSize({ id, qty, size, product }) && (
-                    <p className="stock-error [color:#a32232] [font-size:13px]" role="alert">
-                      No size chosen.{" "}
-                      <Link className="underline" href={`/product/${id}`}>
-                        Choose a size
-                      </Link>{" "}
-                      and remove this line.
-                    </p>
+                  {group.amount > 0 && (
+                    <span className="text-sm font-semibold text-[#1f6b44]">
+                      Set price · you save {money(group.amount)}
+                    </span>
                   )}
-                  {(() => {
-                    const available = lineAvailable({ id, qty, size, product });
-                    const sizeNote = size ? ` in size ${size}` : "";
-                    if (available <= 0) {
-                      return <p className="stock-error [color:#a32232] [font-size:13px]" role="alert">Out of stock{sizeNote}</p>;
-                    }
-                    if (qty > available) {
-                      return (
-                        <p className="stock-error [color:#a32232] [font-size:13px]" role="alert">
-                          Only {available} left{sizeNote}. Reduce quantity to continue.
-                        </p>
-                      );
-                    }
-                    if (available <= 3) {
-                      return <p className="stock-note [color:#786565] [font-size:13px]">Only {available} left{sizeNote}</p>;
-                    }
-                    return null;
-                  })()}
-                  <div className="qty [display:flex] [gap:12px] [align-items:center] [&_button]:[border:1px_solid_#ddd] [&_button]:[padding:6px_12px]">
-                    <button
-                      aria-label={`Decrease ${product!.name} quantity`}
-                      onClick={() => quantity(id, qty - 1, size)}
-                    >
-                      −
-                    </button>
-                    {qty}
-                    <button
-                      aria-label={`Increase ${product!.name} quantity`}
-                      disabled={qty >= lineAvailable({ id, qty, size, product })}
-                      onClick={() => quantity(id, qty + 1, size)}
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    className="text-xs underline mt-3"
-                    onClick={() => remove(id, size)}
-                  >
-                    Remove
-                  </button>
                 </div>
-                <strong>{money(product!.price * qty)}</strong>
-              </div>
+                {group.incomplete && (
+                  <p className="m-0 mt-3 bg-[#fff7e5] px-3 py-2 text-[13px]">
+                    {group.completeSets === 0
+                      ? "A piece of this set is missing, so the set price doesn't apply."
+                      : "Some pieces have extra quantity; the set price applies to complete sets only."}{" "}
+                    <Link href={`/sets/${group.set.id}`} className="underline">View set</Link>
+                  </p>
+                )}
+                <ul className="m-0 list-none p-0 [&>li:last-child]:border-b-0">{group.rows.map(renderRow)}</ul>
+              </section>
             ))}
+            {looseRows.length > 0 && <ul className="m-0 list-none p-0">{looseRows.map(renderRow)}</ul>}
           </div>
 
-          <aside className="summary [background:#f7f5f1] [padding:30px] [height:max-content] [&_h3]:[font:26px_Georgia,serif] [&_.btn]:[width:100%] [&_.btn]:[margin-top:25px]">
-            <h3>Order Summary</h3>
-            <div className="row-line [display:flex] [align-items:center] [justify-content:space-between] [gap:15px] [padding:20px_0] [border-bottom:1px_solid_#eee] max-[520px]:[flex-wrap:wrap] max-[520px]:[row-gap:8px] max-[520px]:[&_>_:last-child]:[margin-left:auto]">
-              <span>Subtotal</span>
-              <strong>{money(total)}</strong>
+          <aside className="h-max bg-[#f7f5f1] p-7">
+            <h2 className="m-0 font-serif text-[26px] font-normal">Order summary</h2>
+            <div className="mt-4 bg-white p-4">
+              <p className="m-0 text-sm" aria-live="polite">
+                {toFreeDelivery > 0 ? (
+                  <>
+                    Add <strong>{money(toFreeDelivery)}</strong> more for free delivery.
+                  </>
+                ) : (
+                  <strong className="text-[#1f6b44]">You&apos;ve unlocked free delivery.</strong>
+                )}
+              </p>
+              <div
+                role="progressbar"
+                aria-label="Progress to free delivery"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={freeProgress}
+                className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eadfdb]"
+              >
+                <div
+                  className={`h-full rounded-full ${toFreeDelivery > 0 ? "bg-[#781d2d]" : "bg-[#1f6b44]"}`}
+                  style={{ width: `${freeProgress}%` }}
+                />
+              </div>
             </div>
-            <div className="row-line [display:flex] [align-items:center] [justify-content:space-between] [gap:15px] [padding:20px_0] [border-bottom:1px_solid_#eee] max-[520px]:[flex-wrap:wrap] max-[520px]:[row-gap:8px] max-[520px]:[&_>_:last-child]:[margin-left:auto]">
-              <span>Shipping</span>
-              <span>Calculated at checkout</span>
-            </div>
-            <div className="row-line [display:flex] [align-items:center] [justify-content:space-between] [gap:15px] [padding:20px_0] [border-bottom:1px_solid_#eee] max-[520px]:[flex-wrap:wrap] max-[520px]:[row-gap:8px] max-[520px]:[&_>_:last-child]:[margin-left:auto]">
-              <strong>Total</strong>
-              <strong>{money(total)}</strong>
-            </div>
+            <dl className="m-0 mt-4 text-sm">
+              <div className="flex justify-between border-b border-[#eee] py-4">
+                <dt>Subtotal</dt>
+                <dd className="m-0 font-semibold">{money(subtotal)}</dd>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between border-b border-[#eee] py-4 text-[#1f6b44]">
+                  <dt>Set savings</dt>
+                  <dd className="m-0 font-semibold">−{money(discount)}</dd>
+                </div>
+              )}
+              <div className="flex justify-between border-b border-[#eee] py-4">
+                <dt>Delivery</dt>
+                <dd className={`m-0 ${delivery === 0 ? "font-semibold text-[#1f6b44]" : ""}`}>
+                  {delivery === 0 ? "Free" : money(delivery)}
+                </dd>
+              </div>
+              <div className="flex justify-between py-4 text-base">
+                <dt className="font-semibold">Total</dt>
+                <dd className="m-0 font-semibold">{money(total)}</dd>
+              </div>
+            </dl>
             {inventoryIssue ? (
-              <button className="btn [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#9b3345] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]" disabled>
-                UPDATE CART STOCK TO CHECKOUT
+              <button type="button" className={primaryButton} disabled>
+                Update cart to check out
               </button>
             ) : (
-              <Link className="btn [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#9b3345] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]" href="/checkout">
-                PROCEED TO CHECKOUT
+              <Link className={primaryButton} href="/checkout">
+                Proceed to checkout
               </Link>
             )}
           </aside>
