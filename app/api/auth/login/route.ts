@@ -23,6 +23,7 @@ import {
   trackDistinct,
   windows,
 } from "@/lib/server/security";
+import { noteError, withMetrics } from "@/lib/server/metrics";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ const ATTEMPTS_PER_IP = 30;
 /** Wrong passwords for one email before it is locked for 15 minutes. */
 const FAILURES_PER_EMAIL = 5;
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const parsed = await readJsonBody(request);
   if ("response" in parsed) return parsed.response;
   const { body } = parsed;
@@ -80,7 +81,10 @@ export async function POST(request: Request) {
     await createSession(user._id);
     return jsonOk({ user: toPublicUser(user) });
   } catch (error) {
+    noteError(error);
     console.error("Sign-in failed:", error instanceof Error ? error.message : error);
     return jsonError(500, "We couldn't sign you in right now. Please try again.");
   }
 }
+
+export const POST = withMetrics("auth", handlePOST);

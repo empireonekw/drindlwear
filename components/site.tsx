@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Facebook,
   Heart,
@@ -20,6 +21,7 @@ import {
 import { mainNav } from "@/lib/navigation";
 import { paymentMethods, promiseText } from "@/lib/store-policy";
 import { AnnouncementBar } from "./announcement-bar";
+import { HeaderSearch } from "./header-search";
 import { useStore } from "./store";
 
 const navItemClass =
@@ -33,6 +35,9 @@ const columnTitleClass =
 export function Header() {
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState(false);
+  const router = useRouter();
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchButton = useRef<HTMLButtonElement>(null);
   const [q, setQ] = useState("");
   /** Mobile drawer: which menu section is expanded. */
   const [openSection, setOpenSection] = useState<string | null>(null);
@@ -49,6 +54,18 @@ export function Header() {
     setMegaSuppressed(true);
   }
   const cartCount = items.reduce((total, item) => total + item.qty, 0);
+
+  function closeSearch() {
+    setSearch(false);
+    searchButton.current?.focus();
+  }
+
+  // Focus the field once the search row starts opening.
+  useEffect(() => {
+    if (!search) return;
+    const timer = window.setTimeout(() => searchInput.current?.focus({ preventScroll: true }), 120);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     if (!menu) return;
@@ -98,8 +115,17 @@ export function Header() {
               className="[display:none] max-[599px]:[display:block] max-[599px]:[width:72px] max-[599px]:[height:auto]"
             />
           </Link>
-          <div className="header-actions min-[1360px]:[grid-column:3] min-[1360px]:[grid-row:1] min-[1360px]:[justify-self:end] min-[1360px]:[&_svg]:[stroke-width:1.6] [display:flex] [gap:24px] [align-items:center] [&_a]:[position:relative] [&_small]:[position:absolute] [&_small]:[top:-8px] [&_small]:[right:-8px] [&_small]:[background:#eadfdc] [&_small]:[border-radius:50%] [&_small]:[font-size:10px] [&_small]:[padding:2px_5px] max-[1359px]:[gap:clamp(8px,_2vw,_14px)] max-[1359px]:[&_svg]:[width:19px] max-[520px]:[&_a[aria-label='Konto']]:[display:none] max-[1359px]:[justify-self:end] max-[1359px]:[&_a]:[display:flex] max-[1359px]:[&_a]:[flex:0_0_24px] max-[1359px]:[&_a]:[align-items:center] max-[1359px]:[&_a]:[justify-content:center] max-[1359px]:[&_a]:[height:40px] max-[1359px]:[&_button]:[display:flex] max-[1359px]:[&_button]:[flex:0_0_24px] max-[1359px]:[&_button]:[align-items:center] max-[1359px]:[&_button]:[justify-content:center] max-[1359px]:[&_button]:[height:40px] max-[430px]:[gap:5px] max-[430px]:[&_svg]:[width:18px] motion-safe:[&_a]:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&_a:hover]:[transform:scale(1.08)] motion-safe:[&_button:hover]:[transform:scale(1.08)]">
-            <button aria-label="Search" onClick={() => setSearch(!search)}>
+          <div className="header-actions min-[1360px]:[grid-column:3] min-[1360px]:[grid-row:1] min-[1360px]:[justify-self:end] min-[1360px]:[&_svg]:[stroke-width:1.6] [display:flex] [gap:24px] [align-items:center] [&>a]:[position:relative] [&_small]:[position:absolute] [&_small]:[top:-8px] [&_small]:[right:-8px] [&_small]:[background:#eadfdc] [&_small]:[border-radius:50%] [&_small]:[font-size:10px] [&_small]:[padding:2px_5px] max-[1359px]:[gap:clamp(8px,_2vw,_14px)] max-[1359px]:[&_svg]:[width:19px] max-[520px]:[&_a[aria-label='Konto']]:[display:none] max-[1359px]:[justify-self:end] max-[1359px]:[&_a]:[display:flex] max-[1359px]:[&_a]:[flex:0_0_24px] max-[1359px]:[&_a]:[align-items:center] max-[1359px]:[&_a]:[justify-content:center] max-[1359px]:[&_a]:[height:40px] max-[1359px]:[&_button]:[display:flex] max-[1359px]:[&_button]:[flex:0_0_24px] max-[1359px]:[&_button]:[align-items:center] max-[1359px]:[&_button]:[justify-content:center] max-[1359px]:[&_button]:[height:40px] max-[430px]:[gap:5px] max-[430px]:[&_svg]:[width:18px] motion-safe:[&>a]:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&>a:hover]:[transform:scale(1.08)] motion-safe:[&>button:hover]:[transform:scale(1.08)]">
+            {/* Wide screens: search field with live results. Smaller screens: icon + slide-down row. */}
+            <HeaderSearch className="hidden min-[1360px]:block" />
+            <button
+              ref={searchButton}
+              className="min-[1360px]:!hidden"
+              aria-label={search ? "Close search" : "Search"}
+              aria-expanded={search}
+              aria-controls="site-search"
+              onClick={() => setSearch(!search)}
+            >
               <Search />
             </button>
             <Link
@@ -277,30 +303,64 @@ export function Header() {
             onClick={() => setMenu(false)}
           />
         )}
-        {search && (
-          <form
-            className="searchbar min-[1360px]:[grid-column:1_/_-1] min-[1360px]:[padding:14px_0] [padding:14px_6%] [display:flex] [gap:12px] [border-top:1px_solid_#eadfdc] [&_input]:[flex:1] [&_input]:[padding:12px] [&_input]:[border:1px_solid_#dcd0cd] [&_button]:[padding:10px]"
-            onSubmit={(event) => {
-              event.preventDefault();
-              location.href = `/search?q=${encodeURIComponent(q)}`;
-            }}
-          >
-            <input
-              autoFocus
-              placeholder="What are you looking for?"
-              value={q}
-              onChange={(event) => setQ(event.target.value)}
-            />
-            <button>Search</button>
-            <button
-              type="button"
-              aria-label="Close search"
-              onClick={() => setSearch(false)}
+        {/* Search row: slides open under the header (height + fade), slides closed again. */}
+        <div
+          id="site-search"
+          className={
+            "searchbar grid min-[1360px]:[grid-column:1_/_-1] min-[1360px]:[margin:0_-28px] " +
+            "duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] " +
+            // Opening: visible at once so the field can take focus. Closing: hidden only after the slide.
+            (search
+              ? "visible grid-rows-[1fr] opacity-100 transition-[grid-template-rows,opacity]"
+              : "invisible grid-rows-[0fr] opacity-0 transition-[grid-template-rows,opacity,visibility]")
+          }
+        >
+          <div className="min-h-0 overflow-hidden">
+            <form
+              role="search"
+              className={
+                "flex h-[64px] items-center gap-4 border-t border-[#eadfdc] px-4 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] sm:px-7 " +
+                (search ? "translate-y-0" : "-translate-y-3")
+              }
+              onSubmit={(event) => {
+                event.preventDefault();
+                const term = q.trim();
+                if (!term) return;
+                setSearch(false);
+                router.push(`/search?q=${encodeURIComponent(term)}`);
+              }}
             >
-              <X />
-            </button>
-          </form>
-        )}
+              <Search size={21} strokeWidth={1.6} aria-hidden="true" className="flex-none text-[#211c1d]" />
+              <label htmlFor="site-search-input" className="sr-only">
+                Search the store
+              </label>
+              <input
+                id="site-search-input"
+                ref={searchInput}
+                type="text"
+                enterKeyHint="search"
+                autoComplete="off"
+                placeholder="Search..."
+                value={q}
+                onChange={(event) => setQ(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") closeSearch();
+                }}
+                tabIndex={search ? 0 : -1}
+                className="h-full min-w-0 flex-1 bg-transparent text-[17px] tracking-[0.2px] text-[#211c1d] outline-none placeholder:text-[#786565] focus-visible:![outline:none]"
+              />
+              <button
+                type="button"
+                aria-label="Close search"
+                tabIndex={search ? 0 : -1}
+                onClick={closeSearch}
+                className="flex h-10 w-10 flex-none items-center justify-center rounded-full text-[#211c1d] transition-colors hover:bg-[#f6eeec] hover:text-[#781d2d]"
+              >
+                <X size={20} strokeWidth={1.6} />
+              </button>
+            </form>
+          </div>
+        </div>
       </header>
     </>
   );

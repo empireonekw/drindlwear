@@ -1,24 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { LayoutDashboard, Package, ShoppingCart, Users, Tags, Image, Settings, Store, Menu, X, LogOut } from "lucide-react";
+import {
+  Activity,
+  ExternalLink,
+  Image as ImageIcon,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Package,
+  Settings,
+  ShoppingCart,
+  Tags,
+  Users,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 
+import { ToastProvider } from "./admin/ui";
 import { useStore } from "./store";
 
-const links = [
-  { name: "Overview", url: "/admin", icon: LayoutDashboard },
-  { name: "Products", url: "/admin/products", icon: Package },
-  { name: "Orders", url: "/admin/orders", icon: ShoppingCart },
-  { name: "Customers", url: "/admin/customers", icon: Users },
-  { name: "Categories", url: "/admin/categories", icon: Tags },
-  { name: "Content", url: "/admin/content", icon: Image },
-  { name: "Settings", url: "/admin/settings", icon: Settings },
-  { name: "View Store", url: "/", icon: Store },
-];
+type NavLink = { name: string; url: string; icon: LucideIcon; count?: number };
 
-/** Admin chrome (sidebar, mobile menu). Access is checked in app/admin/layout.tsx. */
+/** Admin chrome: burgundy sidebar, top bar and toasts. Access is checked in app/admin/layout.tsx. */
 export function AdminShell({
   children,
   adminName,
@@ -28,105 +34,208 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { signOut } = useStore();
+  const { signOut, orders, products } = useStore();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const newOrders = orders.filter((order) => order.status === "New").length;
+  const lowStock = products.filter((product) => product.stock <= 3).length;
+
+  const groups: { title?: string; links: NavLink[] }[] = [
+    { links: [{ name: "Overview", url: "/admin", icon: LayoutDashboard }] },
+    {
+      title: "Catalogue",
+      links: [
+        { name: "Products", url: "/admin/products", icon: Package, count: lowStock || undefined },
+        { name: "Categories", url: "/admin/categories", icon: Tags },
+      ],
+    },
+    {
+      title: "Sales",
+      links: [
+        { name: "Orders", url: "/admin/orders", icon: ShoppingCart, count: newOrders || undefined },
+        { name: "Customers", url: "/admin/customers", icon: Users },
+      ],
+    },
+    {
+      title: "Store",
+      links: [
+        { name: "Homepage", url: "/admin/content", icon: ImageIcon },
+        { name: "Settings", url: "/admin/settings", icon: Settings },
+        { name: "System", url: "/admin/system", icon: Activity },
+      ],
+    },
+  ];
+  const allLinks = groups.flatMap((group) => group.links);
+  const isActive = (url: string) => (url === "/admin" ? pathname === url : pathname === url || pathname.startsWith(`${url}/`));
+  const current = allLinks.find((link) => isActive(link.url))?.name ?? "Admin";
+
+  useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = overflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   async function handleSignOut() {
     await signOut();
     router.replace("/account/login");
     router.refresh();
   }
-  const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (!menuOpen) return;
+  const initials = adminName
+    .split(" ")
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
-    const previousOverflow = document.body.style.overflow;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", closeOnEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [menuOpen]);
-
-  return (
-    <div className="admin-shell [display:grid] [grid-template-columns:minmax(0,_245px)_minmax(0,_1fr)] [min-height:100vh] [background:#fbf5f2] max-[850px]:[grid-template-columns:minmax(0,_1fr)] [align-items:start]">
-      <aside className={menuOpen ? "admin-sidebar menu-open [background:#781d2d] [color:white] [padding:30px_18px] [&_h2]:[font:500_25px_var(--font-serif)] [&_h2]:[margin:0_0_40px] [&_a]:[display:flex] [&_a]:[align-items:center] [&_a]:[gap:12px] [&_a]:[padding:14px] [&_a]:[border-radius:5px] [&_a]:[color:#dcd0cd] [&_a]:[font-size:13px] [&_a:hover]:[background:#ffffff20] max-[850px]:[display:flex] max-[850px]:[overflow-x:auto] max-[850px]:[gap:12px] max-[850px]:[padding:10px_16px] max-[850px]:[&_h2]:[display:none] max-[850px]:[&_a]:[white-space:nowrap] [&_h2]:[font-size:20px] motion-safe:[&_a]:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&_a:hover]:[transform:translateX(3px)] [position:sticky] [top:0] [height:100vh] [overflow-y:auto] [scrollbar-width:none] [min-width:0] [&::-webkit-scrollbar]:[display:none] max-[850px]:[position:static] max-[850px]:[height:auto] max-[850px]:[overflow:visible] max-[850px]:[align-items:center] max-[850px]:[justify-content:space-between]" : "admin-sidebar [background:#781d2d] [color:white] [padding:30px_18px] [&_h2]:[font:500_25px_var(--font-serif)] [&_h2]:[margin:0_0_40px] [&_a]:[display:flex] [&_a]:[align-items:center] [&_a]:[gap:12px] [&_a]:[padding:14px] [&_a]:[border-radius:5px] [&_a]:[color:#dcd0cd] [&_a]:[font-size:13px] [&_a:hover]:[background:#ffffff20] max-[850px]:[display:flex] max-[850px]:[overflow-x:auto] max-[850px]:[gap:12px] max-[850px]:[padding:10px_16px] max-[850px]:[&_h2]:[display:none] max-[850px]:[&_a]:[white-space:nowrap] [&_h2]:[font-size:20px] motion-safe:[&_a]:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&_a:hover]:[transform:translateX(3px)] [position:sticky] [top:0] [height:100vh] [overflow-y:auto] [scrollbar-width:none] [min-width:0] [&::-webkit-scrollbar]:[display:none] max-[850px]:[position:static] max-[850px]:[height:auto] max-[850px]:[overflow:visible] max-[850px]:[align-items:center] max-[850px]:[justify-content:space-between]"}>
-        <Link href="/" className="admin-brand [display:flex] [align-items:center] [justify-content:center] [margin:0_auto_12px] [padding:8px_0] max-[850px]:[width:max-content] max-[850px]:[max-width:100%] max-[850px]:[margin:0] max-[850px]:[padding:0]">
+  const sidebar = (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between px-6 pb-6 pt-7">
+        <Link href="/admin" aria-label="Dirndl Wear admin home">
           {/* Reversed (white) logo on solid burgundy, as the brand guide allows. */}
-          <img
-            src="/brand/dirndl-wear-wordmark-white.png"
-            alt="Dirndl Wear"
-            width={200}
-            height={37}
-            className="h-auto w-[200px] max-[850px]:hidden"
-          />
-          <img
-            src="/brand/dirndl-wear-monogram-white.png"
-            alt="Dirndl Wear"
-            width={66}
-            height={40}
-            className="hidden h-auto w-[66px] max-[850px]:block"
-          />
+          <img src="/brand/dirndl-wear-wordmark-white.png" alt="Dirndl Wear" width={190} height={35} className="h-auto w-[190px]" />
         </Link>
-        <div className="admin-sidebar-label [margin:0_0_22px] [color:#d9b6b6] [font-size:10px] [letter-spacing:2px] [text-align:center] max-[850px]:[margin:0_0_0_auto]">ADMIN</div>
         <button
-          className="admin-menu-toggle [display:none] max-[850px]:[display:flex] max-[850px]:[width:42px] max-[850px]:[height:42px] max-[850px]:[flex:0_0_42px] max-[850px]:[align-items:center] max-[850px]:[justify-content:center] max-[850px]:[border:1px_solid_rgb(255_255_255_/_22%)] max-[850px]:[border-radius:50%] max-[850px]:[color:#fff] max-[850px]:[&:not(:disabled):hover]:[transform:none]"
           type="button"
-          aria-label={menuOpen ? "Close admin menu" : "Open admin menu"}
-          aria-expanded={menuOpen}
-          aria-controls="admin-navigation"
-          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Close menu"
+          onClick={() => setMenuOpen(false)}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 hover:bg-white/10 lg:hidden"
         >
-          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          <X size={20} />
         </button>
-        <nav id="admin-navigation" className={menuOpen ? "admin-nav open [display:contents] max-[850px]:[position:fixed] max-[850px]:[z-index:1001] max-[850px]:[top:0] max-[850px]:[bottom:0] max-[850px]:[left:0] max-[850px]:[display:flex] max-[850px]:[width:min(90vw,_360px)] max-[850px]:[height:100dvh] max-[850px]:[flex-direction:column] max-[850px]:[gap:4px] max-[850px]:[padding:0_16px_max(16px,_env(safe-area-inset-bottom))] max-[850px]:[overflow-y:auto] max-[850px]:[overscroll-behavior:contain] max-[850px]:[background:#fbf5f2] max-[850px]:[box-shadow:12px_0_36px_rgb(33_28_29_/_12%)] max-[850px]:[transform:translateX(-105%)] max-[850px]:[transition:transform_260ms_cubic-bezier(0.22,_1,_0.36,_1)] max-[850px]:[visibility:hidden] max-[850px]:[pointer-events:none] max-[850px]:[&.open]:[transform:translateX(0)] max-[850px]:[&.open]:[visibility:visible] max-[850px]:[&.open]:[pointer-events:auto] max-[850px]:[&_a]:[display:flex] max-[850px]:[&_a]:[min-height:54px] max-[850px]:[&_a]:[flex:0_0_auto] max-[850px]:[&_a]:[align-items:center] max-[850px]:[&_a]:[gap:12px] max-[850px]:[&_a]:[padding:12px_14px] max-[850px]:[&_a]:[border:1px_solid_transparent] max-[850px]:[&_a]:[border-radius:6px] max-[850px]:[&_a]:[color:#211c1d] max-[850px]:[&_a]:[font-size:14px] max-[850px]:[&_a]:[white-space:nowrap] max-[850px]:[&_a[aria-current='page']]:[border-color:#ead9d5] max-[850px]:[&_a[aria-current='page']]:[background:#f5ebe8] max-[850px]:[&_a[aria-current='page']]:[color:#781d2d] max-[850px]:[&_a_svg]:[flex:0_0_auto]" : "admin-nav [display:contents] max-[850px]:[position:fixed] max-[850px]:[z-index:1001] max-[850px]:[top:0] max-[850px]:[bottom:0] max-[850px]:[left:0] max-[850px]:[display:flex] max-[850px]:[width:min(90vw,_360px)] max-[850px]:[height:100dvh] max-[850px]:[flex-direction:column] max-[850px]:[gap:4px] max-[850px]:[padding:0_16px_max(16px,_env(safe-area-inset-bottom))] max-[850px]:[overflow-y:auto] max-[850px]:[overscroll-behavior:contain] max-[850px]:[background:#fbf5f2] max-[850px]:[box-shadow:12px_0_36px_rgb(33_28_29_/_12%)] max-[850px]:[transform:translateX(-105%)] max-[850px]:[transition:transform_260ms_cubic-bezier(0.22,_1,_0.36,_1)] max-[850px]:[visibility:hidden] max-[850px]:[pointer-events:none] max-[850px]:[&.open]:[transform:translateX(0)] max-[850px]:[&.open]:[visibility:visible] max-[850px]:[&.open]:[pointer-events:auto] max-[850px]:[&_a]:[display:flex] max-[850px]:[&_a]:[min-height:54px] max-[850px]:[&_a]:[flex:0_0_auto] max-[850px]:[&_a]:[align-items:center] max-[850px]:[&_a]:[gap:12px] max-[850px]:[&_a]:[padding:12px_14px] max-[850px]:[&_a]:[border:1px_solid_transparent] max-[850px]:[&_a]:[border-radius:6px] max-[850px]:[&_a]:[color:#211c1d] max-[850px]:[&_a]:[font-size:14px] max-[850px]:[&_a]:[white-space:nowrap] max-[850px]:[&_a[aria-current='page']]:[border-color:#ead9d5] max-[850px]:[&_a[aria-current='page']]:[background:#f5ebe8] max-[850px]:[&_a[aria-current='page']]:[color:#781d2d] max-[850px]:[&_a_svg]:[flex:0_0_auto]"} aria-label="Admin navigation">
-          <div className="admin-nav-header [display:none] max-[850px]:[&_button:not(:disabled):hover]:[transform:none] max-[850px]:[position:sticky] max-[850px]:[top:0] max-[850px]:[z-index:1] max-[850px]:[display:flex] max-[850px]:[min-height:76px] max-[850px]:[align-items:center] max-[850px]:[justify-content:space-between] max-[850px]:[margin:0_-16px_8px] max-[850px]:[padding:0_24px] max-[850px]:[border-bottom:1px_solid_#eee8e5] max-[850px]:[background:#fbf5f2] max-[850px]:[color:#781d2d] max-[850px]:[font-size:11px] max-[850px]:[font-weight:600] max-[850px]:[letter-spacing:2px] max-[850px]:[&_button]:[display:flex] max-[850px]:[&_button]:[width:40px] max-[850px]:[&_button]:[height:40px] max-[850px]:[&_button]:[align-items:center] max-[850px]:[&_button]:[justify-content:center] max-[850px]:[&_button]:[color:#211c1d]">
-            <span>ADMIN MENU</span>
-            <button type="button" aria-label="Close admin menu" onClick={() => setMenuOpen(false)}>
-              <X size={22} />
-            </button>
+      </div>
+      <p className="m-0 px-6 pb-4 text-[11px] font-semibold uppercase tracking-[2px] text-[#d9b6b6]">Admin</p>
+
+      <nav aria-label="Admin navigation" className="flex-1 overflow-y-auto px-3 pb-4">
+        {groups.map((group, index) => (
+          <div key={group.title ?? index} className="mb-4">
+            {group.title && (
+              <p className="m-0 px-3 pb-1.5 pt-2 text-[11px] font-medium uppercase tracking-[1.4px] text-white/55">{group.title}</p>
+            )}
+            {group.links.map(({ name, url, icon: Icon, count }) => {
+              const active = isActive(url);
+              return (
+                <Link
+                  key={url}
+                  href={url}
+                  aria-current={active ? "page" : undefined}
+                  className={
+                    "group relative mb-0.5 flex h-11 items-center gap-3 rounded-xl px-3 text-[14px] transition-colors " +
+                    (active ? "bg-white text-burgundy shadow-[0_6px_16px_rgb(0_0_0_/_12%)]" : "text-white/85 hover:bg-white/10 hover:text-white")
+                  }
+                >
+                  <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+                  <span className="flex-1">{name}</span>
+                  {count !== undefined && (
+                    <span
+                      className={
+                        "min-w-[22px] rounded-full px-1.5 text-center text-[11px] font-semibold leading-[20px] " +
+                        (active ? "bg-burgundy text-white" : "bg-white/20 text-white")
+                      }
+                      aria-label={`${count} need attention`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </div>
-          {links.map(({ name, url, icon: Icon }) => {
-            const active = url === "/admin"
-              ? pathname === url
-              : url === "/"
-                ? pathname === url
-                : pathname === url || pathname.startsWith(`${url}/`);
-            return (
-                <Link key={url} href={url} aria-current={active ? "page" : undefined} onClick={() => setMenuOpen(false)}>
-                <Icon size={18} />
-                {name}
-              </Link>
-            );
-          })}
-        </nav>
-        {menuOpen && <button className="admin-nav-backdrop [display:none] max-[850px]:[position:fixed] max-[850px]:[z-index:1000] max-[850px]:[inset:0] max-[850px]:[display:block] max-[850px]:[width:100%] max-[850px]:[height:100%] max-[850px]:[background:rgb(25_20_21_/_54%)]" type="button" aria-label="Close admin menu" onClick={() => setMenuOpen(false)} />}
-      </aside>
-      <main className="admin-main [padding:35px] [min-width:0] max-[520px]:[padding:18px] motion-safe:[&>*]:animate-page-enter motion-safe:[&>:nth-child(2)]:[animation-delay:70ms] motion-safe:[&>:nth-child(3)]:[animation-delay:120ms]">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#eadfdc] pb-4 text-sm text-[#786565]">
-          <span>
-            Signed in as <strong className="text-[#211c1d]">{adminName}</strong>
+        ))}
+      </nav>
+
+      <div className="border-t border-white/15 px-4 py-4">
+        <Link
+          href="/"
+          className="mb-3 flex h-10 items-center gap-3 rounded-xl px-3 text-[14px] text-white/85 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <ExternalLink size={17} strokeWidth={1.8} aria-hidden="true" />
+          View store
+        </Link>
+        <div className="flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2.5">
+          <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-white text-[13px] font-semibold text-burgundy" aria-hidden="true">
+            {initials}
           </span>
+          <div className="min-w-0 flex-1">
+            <p className="m-0 truncate text-[13px] font-medium text-white">{adminName}</p>
+            <p className="m-0 text-[11px] text-white/60">Administrator</p>
+          </div>
           <button
             type="button"
+            aria-label="Sign out"
+            title="Sign out"
             onClick={handleSignOut}
-            className="flex items-center gap-2 border border-[#781d2d] px-4 py-2 text-[11px] font-semibold uppercase tracking-[1.5px] text-[#781d2d] transition-colors hover:bg-[#781d2d] hover:text-white"
+            className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/15 hover:text-white"
           >
-            <LogOut size={14} aria-hidden="true" /> Sign out
+            <LogOut size={16} />
           </button>
         </div>
-        <div className="notice [background:#f6eeec] [border:1px_solid_#e8d2d0] [padding:13px_18px] [font-size:12px] [margin-bottom:20px]">
-          Products, orders and settings are still preview data: changes only last in
-          this browser (products reset on reload).
-        </div>
-        {children}
-      </main>
+      </div>
     </div>
+  );
+
+  return (
+    <ToastProvider>
+      <div className="min-h-screen bg-[#fbf5f2] lg:pl-[264px]">
+        {/* Desktop sidebar */}
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] bg-burgundy lg:block">{sidebar}</aside>
+
+        {/* Mobile sidebar */}
+        <div className={"fixed inset-0 z-[70] lg:hidden " + (menuOpen ? "visible" : "invisible [transition:visibility_0s_300ms]")}>
+          <div
+            onClick={() => setMenuOpen(false)}
+            className={"absolute inset-0 bg-[rgb(33_28_29_/_45%)] transition-opacity duration-300 " + (menuOpen ? "opacity-100" : "opacity-0")}
+          />
+          <aside
+            className={
+              "absolute inset-y-0 left-0 w-[min(86vw,300px)] bg-burgundy shadow-[20px_0_50px_rgb(33_28_29_/_25%)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] " +
+              (menuOpen ? "translate-x-0" : "-translate-x-full")
+            }
+          >
+            {sidebar}
+          </aside>
+        </div>
+
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[#eadfdc] bg-[#fbf5f2]/90 px-4 backdrop-blur sm:px-8">
+          <button
+            type="button"
+            aria-label="Open menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-charcoal hover:bg-[#f1ecea] lg:hidden"
+          >
+            <Menu size={21} />
+          </button>
+          <p className="m-0 min-w-0 flex-1 truncate text-[14px] text-taupe">
+            Admin <span className="mx-1.5 text-[#cdbdb9]">/</span>
+            <span className="font-medium text-charcoal">{current}</span>
+          </p>
+          <span
+            title="Products, orders and settings are preview data kept in this browser. Uploaded photos are saved in MongoDB."
+            className="hidden items-center gap-2 rounded-full border border-[#e8d2d0] bg-white px-3 py-1.5 text-[12px] text-taupe sm:inline-flex"
+          >
+            <span className="h-2 w-2 rounded-full bg-[#d39b4a]" aria-hidden="true" />
+            Preview data
+          </span>
+          <Link
+            href="/"
+            className="hidden h-10 items-center gap-2 rounded-xl border border-[#dcd0cd] bg-white px-3.5 text-[13px] font-medium text-charcoal transition-colors hover:border-burgundy hover:text-burgundy md:inline-flex"
+          >
+            <ExternalLink size={15} aria-hidden="true" />
+            View store
+          </Link>
+        </header>
+
+        <main className="mx-auto w-full max-w-[1320px] px-4 py-8 sm:px-8">{children}</main>
+      </div>
+    </ToastProvider>
   );
 }

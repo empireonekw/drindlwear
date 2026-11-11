@@ -47,7 +47,10 @@ export function middleware(request: NextRequest) {
   if (!SAFE_METHODS.has(request.method) && !sameOrigin(request)) return deny(403, "Forbidden.");
 
   const response = NextResponse.next();
-  response.headers.set("Cache-Control", "no-store");
+  // Product photos (/api/images/<id>) set their own long cache header.
+  if (!request.nextUrl.pathname.startsWith("/api/images/")) {
+    response.headers.set("Cache-Control", "no-store");
+  }
   response.headers.set("X-Robots-Tag", "noindex, nofollow");
   return response;
 }

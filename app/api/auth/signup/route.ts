@@ -25,6 +25,7 @@ import {
   trackDistinct,
   windows,
 } from "@/lib/server/security";
+import { noteError, withMetrics } from "@/lib/server/metrics";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ const GLOBAL_PER_HOUR = Number(process.env.SIGNUPS_PER_HOUR) || 300;
 
 const fieldError = (error: string, field: string) => jsonError(400, error, { field });
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const parsed = await readJsonBody(request);
   if ("response" in parsed) return parsed.response;
   const { body } = parsed;
@@ -119,7 +120,10 @@ export async function POST(request: Request) {
     if (error instanceof MongoServerError && error.code === 11000) {
       return fieldError("An account with this email already exists. Try signing in.", "email");
     }
+    noteError(error);
     console.error("Sign-up failed:", error instanceof Error ? error.message : error);
     return jsonError(500, "We couldn't create your account right now. Please try again.");
   }
 }
+
+export const POST = withMetrics("auth", handlePOST);

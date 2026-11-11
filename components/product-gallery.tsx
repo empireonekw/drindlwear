@@ -21,7 +21,14 @@ export function ProductGallery({
 
   return (
     <div
-      className="grid gap-3 min-[851px]:grid-cols-[84px_minmax(0,1fr)] min-[851px]:gap-4"
+      // The thumbnail column exists only when there is more than one image; with a
+      // single image the main photo gets the full width. self-start keeps the gallery
+      // from stretching to the height of the details column; on desktop it stays in
+      // view while the details scroll.
+      className={
+        "grid gap-3 self-start min-[851px]:sticky min-[851px]:top-[100px] min-[851px]:gap-4" +
+        (count > 1 ? " min-[851px]:grid-cols-[84px_minmax(0,1fr)]" : "")
+      }
       onKeyDown={(event) => {
         if (count < 2) return;
         if (event.key === "ArrowRight") go(active + 1);

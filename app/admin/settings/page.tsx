@@ -1,52 +1,110 @@
 "use client";
 
 import { useState } from "react";
+import { ImageIcon, KeyRound, ShieldCheck, Truck } from "lucide-react";
 
+import { Badge, Button, Card, Field, inputClass, PageHeader, useToast } from "@/components/admin/ui";
 import { useStore } from "@/components/store";
+import { money } from "@/lib/data";
+import { paymentMethods, storePolicy } from "@/lib/store-policy";
 
 export default function Settings() {
   const store = useStore();
+  const toast = useToast();
   const [name, setName] = useState(store.shopName);
-  const [currency, setCurrency] = useState("PKR");
-  const [note, setNote] = useState("");
   const [error, setError] = useState("");
 
-  function saveSettings() {
-    setNote("");
+  function save() {
     if (!name.trim()) {
       setError("Enter a shop name.");
       return;
     }
     setError("");
     store.setShopName(name.trim());
-    setNote("Settings saved in this browser.");
+    toast("Store details saved.");
   }
+
+  const policyRows: [string, string][] = [
+    ["Free delivery from", money(storePolicy.freeDeliveryFrom)],
+    ["Delivery fee below that", money(storePolicy.deliveryFee)],
+    ["Delivery time", storePolicy.deliveryTime],
+    ["Size exchange window", `${storePolicy.exchangeDays} days after delivery`],
+  ];
 
   return (
     <>
-      <h1 className="text-3xl font-serif">Settings</h1>
-      <div className="admin-card max-w-2xl [background:white] [border:1px_solid_#eadfdc] [border-radius:8px] [padding:25px] [margin:25px_0] [overflow-x:auto] [min-width:0] motion-safe:[transition:transform_240ms_ease,_box-shadow_240ms_ease] motion-safe:[&:hover]:[transform:translateY(-3px)] motion-safe:[&:hover]:[box-shadow:0_12px_28px_rgb(33_28_29_/_8%)]">
-        <label className="block mb-2">Shop Name</label>
-        <input
-          className="field w-full mb-5 [padding:12px] [border:1px_solid_#dcd0cd] [background:white]"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
+      <PageHeader title="Settings" description="Store details, delivery rules and how the admin is secured." />
 
-        <label className="block mb-2">Currency</label>
-        <select
-          className="field w-full [padding:12px] [border:1px_solid_#dcd0cd] [background:white]"
-          value={currency}
-          onChange={(event) => setCurrency(event.target.value)}
-        >
-          <option>PKR</option>
-        </select>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Card title="Store details" action={<Button variant="primary" size="sm" onClick={save} disabled={name.trim() === store.shopName}>Save</Button>}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Shop name" htmlFor="shop-name" error={error}>
+              <input id="shop-name" className={inputClass} value={name} onChange={(event) => setName(event.target.value)} />
+            </Field>
+            <Field label="Currency" htmlFor="currency" hint="Prices are shown as “Rs 14,990”.">
+              <select id="currency" className={inputClass} disabled defaultValue="PKR">
+                <option value="PKR">Pakistani rupee (PKR)</option>
+              </select>
+            </Field>
+          </div>
+        </Card>
 
-        {error && <p role="alert" className="mt-4">{error}</p>}
-        {note && <p className="mt-4" role="status">{note}</p>}
-        <button className="btn mt-5 [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#5e1622] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]" onClick={saveSettings}>
-          SAVE SETTINGS
-        </button>
+        <Card title="Delivery & exchanges" description="Shown in the announcement bar, product pages, cart and checkout." action={<Truck size={18} className="text-taupe" aria-hidden="true" />}>
+          <dl className="m-0 grid grid-cols-[minmax(0,1fr)_auto] gap-y-3 text-[14px]">
+            {policyRows.map(([label, value]) => (
+              <div key={label} className="contents">
+                <dt className="text-taupe">{label}</dt>
+                <dd className="m-0 text-right font-medium">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="m-0 mt-4 rounded-xl bg-[#fbf5f2] px-3.5 py-2.5 text-[12px] text-taupe">
+            These rules live in <code className="text-charcoal">lib/store-policy.ts</code>, so every page shows the same numbers.
+          </p>
+        </Card>
+
+        <Card title="Payment methods" description="Offered at checkout.">
+          <ul className="m-0 grid list-none gap-3 p-0">
+            {paymentMethods.map((method) => (
+              <li key={method.id} className="flex items-start justify-between gap-3 rounded-xl border border-[#f1e8e5] px-4 py-3">
+                <span>
+                  <span className="block text-[14px] font-medium">{method.label}</span>
+                  <span className="block text-[12px] text-taupe">{method.note}</span>
+                </span>
+                <Badge tone={method.id === "cod" ? "green" : "amber"}>{method.id === "cod" ? "Active" : "Preview"}</Badge>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card title="Security & storage">
+          <ul className="m-0 grid list-none gap-4 p-0 text-[14px]">
+            <li className="flex gap-3">
+              <ShieldCheck size={18} className="mt-0.5 flex-none text-burgundy" aria-hidden="true" />
+              <span>
+                <strong className="block font-medium">Admin access</strong>
+                <span className="text-taupe">Only accounts with the admin role can open these pages. Checked on the server for every request.</span>
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <KeyRound size={18} className="mt-0.5 flex-none text-burgundy" aria-hidden="true" />
+              <span>
+                <strong className="block font-medium">Admin password</strong>
+                <span className="text-taupe">
+                  Change <code className="text-charcoal">ADMIN_PASSWORD</code> in <code className="text-charcoal">.env.local</code>, then run{" "}
+                  <code className="text-charcoal">npm run seed:admin</code>.
+                </span>
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <ImageIcon size={18} className="mt-0.5 flex-none text-burgundy" aria-hidden="true" />
+              <span>
+                <strong className="block font-medium">Product photos</strong>
+                <span className="text-taupe">Uploaded photos are stored in MongoDB. Products, orders and settings are still preview data kept in this browser.</span>
+              </span>
+            </li>
+          </ul>
+        </Card>
       </div>
     </>
   );

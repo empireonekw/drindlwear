@@ -1,225 +1,270 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Eye, X } from "lucide-react";
+import { useState } from "react";
+import { Ban, Check, CreditCard, MapPin, ShoppingCart, User } from "lucide-react";
 
-import { OrderStatus, useStore } from "@/components/store";
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  Drawer,
+  EmptyState,
+  orderStatusTone,
+  PageHeader,
+  SearchInput,
+  Tabs,
+  tableClass,
+  tdClass,
+  thClass,
+  useToast,
+} from "@/components/admin/ui";
+import { Order, OrderStatus, useStore } from "@/components/store";
 import { money } from "@/lib/data";
 import { formatOrderId } from "@/lib/order";
 
-const orderStatuses: OrderStatus[] = [
-  "New",
-  "Processing",
-  "Shipped",
-  "Delivered",
-  "Cancelled",
-];
+const flow: OrderStatus[] = ["New", "Processing", "Shipped", "Delivered"];
+const nextLabel: Partial<Record<OrderStatus, { to: OrderStatus; label: string }>> = {
+  New: { to: "Processing", label: "Start processing" },
+  Processing: { to: "Shipped", label: "Mark as shipped" },
+  Shipped: { to: "Delivered", label: "Mark as delivered" },
+};
+type Filter = OrderStatus | "All";
 
 export default function Orders() {
   const { orders, updateOrderStatus } = useStore();
-  const [error, setError] = useState("");
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const selectedOrder = orders.find((order) => order.id === selectedOrderId);
+  const toast = useToast();
+  const [filter, setFilter] = useState<Filter>("All");
+  const [query, setQuery] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const open = orders.find((order) => order.id === openId);
 
-  useEffect(() => {
-    if (!selectedOrderId) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedOrderId(null);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [selectedOrderId]);
-
-  function changeStatus(orderId: string, status: OrderStatus) {
-    setError("");
+  function changeStatus(order: Order, status: OrderStatus) {
     try {
-      updateOrderStatus(orderId, status);
-    } catch (updateError) {
-      setError(
-        updateError instanceof Error
-          ? updateError.message
-          : "Could not update order.",
-      );
+      updateOrderStatus(order.id, status);
+      toast(`${formatOrderId(order.id)} is now ${status.toLowerCase()}.`);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Could not update the order.", "error");
     }
   }
 
+  const term = query.trim().toLowerCase();
+  const searched = orders.filter((order) =>
+    `${formatOrderId(order.id)} ${order.customer} ${order.customerEmail} ${order.customerPhone}`.toLowerCase().includes(term),
+  );
+  const visible = searched.filter((order) => filter === "All" || order.status === filter);
+  const count = (status: Filter) => searched.filter((order) => status === "All" || order.status === status).length;
+
   return (
     <>
-      <div className="admin-head [display:flex] [justify-content:space-between] [align-items:center] [margin-bottom:30px] [&_h1]:[font:500_32px_var(--font-serif)] max-[520px]:[flex-wrap:wrap] max-[520px]:[gap:12px] max-[520px]:[&_h1]:[font-size:27px]">
-        <h1>Orders</h1>
-        <span>{orders.length} Orders</span>
-      </div>
-      {error && <p role="alert">{error}</p>}
+      <PageHeader title="Orders" description={`${orders.length} orders · ${count("New")} waiting to be processed.`} />
 
-      <div className="admin-card [background:white] [border:1px_solid_#eadfdc] [border-radius:8px] [padding:25px] [margin:25px_0] [overflow-x:auto] [min-width:0] motion-safe:[transition:transform_240ms_ease,_box-shadow_240ms_ease] motion-safe:[&:hover]:[transform:translateY(-3px)] motion-safe:[&:hover]:[box-shadow:0_12px_28px_rgb(33_28_29_/_8%)]">
-        <table className="admin-table [width:100%] [border-collapse:collapse] [text-align:left] [font-size:13px] [&_th]:[padding:15px_12px] [&_th]:[border-bottom:1px_solid_#eadfdc] [&_td]:[padding:15px_12px] [&_td]:[border-bottom:1px_solid_#eadfdc] [&_th]:[color:#786565] [&_th]:[font-size:11px] [&_th]:[text-transform:uppercase] [&_th]:[letter-spacing:1px] [&_img]:[height:52px] [&_img]:[width:45px] [&_img]:[object-fit:cover] [&_button]:[color:#781d2d]">
-          <thead>
-            <tr>
-              <th>Order Number</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center">
-                  No orders yet.
-                </td>
-              </tr>
-            ) : (
-              orders.map((order) => (
-                <tr key={order.id}>
-                  <td>
-                    <strong>{formatOrderId(order.id)}</strong>
-                  </td>
-                  <td>{order.customer}</td>
-                  <td>{order.date}</td>
-                  <td>{money(order.total)}</td>
-                  <td>
-                    <select
-                      className="field [padding:12px] [border:1px_solid_#dcd0cd] [background:white]"
-                      aria-label={`Change status for order ${order.id}`}
-                      value={order.status}
-                      onChange={(event) =>
-                        changeStatus(order.id, event.target.value as OrderStatus)
-                      }
-                    >
-                      {orderStatuses.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="order-view-button [display:inline-flex] [align-items:center] [gap:7px] [border:1px_solid_#ead9d7] [border-radius:6px] [padding:8px_11px] [color:#781d2d] [background:#fff] [font-size:12px] [font-weight:600] [transition:background_.2s,_border-color_.2s] [&:hover]:[background:#fbf5f2] [&:hover]:[border-color:#d9b6b6]"
-                      aria-label={`View details for order ${order.id}`}
-                      title="View order details"
-                      onClick={() => setSelectedOrderId(order.id)}
-                    >
-                      <Eye size={18} />
-                      <span>View</span>
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      {selectedOrder && (
-        <div
-          className="order-dialog-backdrop [position:fixed] [inset:0] [z-index:1000] [display:flex] [align-items:center] [justify-content:center] [padding:24px] [background:#21131699] [backdrop-filter:blur(3px)] max-[520px]:[align-items:flex-end] max-[520px]:[padding:0]"
-          onClick={() => setSelectedOrderId(null)}
-        >
-          <section
-            className="order-dialog [width:min(760px,_100%)] [max-height:min(88vh,_900px)] [overflow-y:auto] [border-radius:12px] [background:#fff] [box-shadow:0_24px_80px_#190b0e40] max-[520px]:[max-height:92vh] max-[520px]:[border-radius:14px_14px_0_0]"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="order-dialog-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header className="order-dialog-header [display:flex] [align-items:flex-start] [justify-content:space-between] [padding:25px_30px_22px] [border-bottom:1px_solid_#eee8e7] [background:#fbf5f2] [&_h2]:[margin:7px_0_4px] [&_h2]:[color:#211c1d] [&_h2]:[font:500_28px_var(--font-serif)] [&_p]:[color:#786565] [&_p]:[font-size:13px] max-[520px]:[padding:21px_20px_17px]">
-              <div>
-                <span className="order-dialog-eyebrow [display:block] [color:#786565] [font-size:10px] [font-weight:700] [letter-spacing:1.2px]">ORDER DETAILS</span>
-                <h2 id="order-dialog-title">
-                  {formatOrderId(selectedOrder.id)}
-                </h2>
-                <p>Placed on {selectedOrder.date}</p>
-              </div>
-              <button
-                type="button"
-                className="order-dialog-close [display:grid] [width:36px] [height:36px] [place-items:center] [border:1px_solid_#e8ddda] [border-radius:50%] [color:#211c1d] [background:white] [&:hover]:[background:#f5eae8]"
-                aria-label="Close order details"
-                onClick={() => setSelectedOrderId(null)}
-              >
-                <X size={20} />
-              </button>
-            </header>
-
-            <div className="order-dialog-content [padding:25px_30px_30px] max-[520px]:[padding:20px]">
-              <div className="order-detail-grid [display:grid] [grid-template-columns:repeat(2,_minmax(0,_1fr))] [gap:12px] max-[520px]:[grid-template-columns:1fr]">
-                <div className="order-detail-card [display:flex] [min-width:0] [flex-direction:column] [gap:7px] [padding:16px] [border:1px_solid_#eee8e7] [border-radius:8px] [color:#786565] [font-size:13px] [overflow-wrap:anywhere] [&_strong]:[color:#211c1d] [&_strong]:[font-size:14px]">
-                  <span className="order-detail-label [display:block] [color:#786565] [font-size:10px] [font-weight:700] [letter-spacing:1.2px] [margin-bottom:3px]">CUSTOMER</span>
-                  <strong>{selectedOrder.customer}</strong>
-                  <span>{selectedOrder.customerEmail || "Email unavailable"}</span>
-                  <span>{selectedOrder.customerPhone || "Phone not provided"}</span>
-                </div>
-                <div className="order-detail-card [display:flex] [min-width:0] [flex-direction:column] [gap:7px] [padding:16px] [border:1px_solid_#eee8e7] [border-radius:8px] [color:#786565] [font-size:13px] [overflow-wrap:anywhere] [&_strong]:[color:#211c1d] [&_strong]:[font-size:14px]">
-                  <span className="order-detail-label [display:block] [color:#786565] [font-size:10px] [font-weight:700] [letter-spacing:1.2px] [margin-bottom:3px]">DELIVERY ADDRESS</span>
-                  {selectedOrder.shippingAddress ? (
-                    <strong>
-                      {selectedOrder.shippingAddress.street}
-                      <br />
-                      {selectedOrder.shippingAddress.city},{" "}
-                      {selectedOrder.shippingAddress.zip}
-                    </strong>
-                  ) : (
-                    <strong>Address unavailable</strong>
-                  )}
-                </div>
-                <div className="order-detail-card order-detail-summary [display:flex] [min-width:0] [flex-direction:column] [gap:7px] [padding:16px] [border:1px_solid_#eee8e7] [border-radius:8px] [color:#786565] [font-size:13px] [overflow-wrap:anywhere] [&_strong]:[color:#211c1d] [&_strong]:[font-size:14px] [grid-column:1_/_-1] [flex-direction:row] [align-items:center] [justify-content:space-between] [&_.order-detail-label]:[margin:0] max-[520px]:[grid-column:auto] max-[520px]:[flex-wrap:wrap] max-[520px]:[justify-content:flex-start] max-[520px]:[gap:10px_18px]">
-                  <span className="order-detail-label [display:block] [color:#786565] [font-size:10px] [font-weight:700] [letter-spacing:1.2px] [margin-bottom:3px]">ORDER STATUS</span>
-                  <strong>{selectedOrder.status}</strong>
-                  <span>
-                    Payment: {selectedOrder.paymentStatus || "unpaid"}
-                  </span>
-                </div>
-              </div>
-
-              <h3 className="order-items-heading [margin:25px_0_12px] [color:#211c1d] [font:500_20px_var(--font-serif)]">Items ordered</h3>
-              {selectedOrder.items?.length ? (
-                <div className="order-items-list [border-top:1px_solid_#eee8e7]">
-                  {selectedOrder.items.map((item) => (
-                    <div className="order-item-row [display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [padding:14px_2px] [border-bottom:1px_solid_#eee8e7] [font-size:13px] [&_div]:[display:flex] [&_div]:[flex-direction:column] [&_div]:[gap:5px] [&_div_span]:[color:#786565] [&_div_span]:[font-size:12px] [&_>_strong]:[white-space:nowrap]" key={`${item.productId}-${item.size ?? ""}-${item.setName ?? ""}`}>
-                      <div>
-                        <strong>{item.name}</strong>
-                        <span>
-                          {item.size ? `Size ${item.size} · ` : ""}Qty {item.qty} × {money(item.price)}
-                        </span>
-                        {item.setName && <span>Part of {item.setName}</span>}
-                      </div>
-                      <strong>{money(item.qty * item.price)}</strong>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="order-items-empty [padding:14px_0] [color:#786565] [font-size:13px]">
-                  Item details are unavailable for this order.
-                </p>
-              )}
-              {selectedOrder.deliveryFee !== undefined && (
-                <p className="mt-4 flex justify-between text-sm">
-                  <span>Delivery</span>
-                  <strong>{selectedOrder.deliveryFee === 0 ? "Free" : money(selectedOrder.deliveryFee)}</strong>
-                </p>
-              )}
-              {selectedOrder.paymentMethod && (
-                <p className="mt-2 flex justify-between text-sm">
-                  <span>Payment</span>
-                  <strong>{selectedOrder.paymentMethod} · {selectedOrder.paymentStatus}</strong>
-                </p>
-              )}
-              {selectedOrder.discount ? (
-                <p className="mt-4 flex justify-between text-sm text-[#1f6b44]">
-                  <span>Set savings</span>
-                  <strong>−{money(selectedOrder.discount)}</strong>
-                </p>
-              ) : null}
-              <div className="order-total-row [display:flex] [justify-content:space-between] [margin-top:16px] [padding-top:17px] [border-top:1px_solid_#dfd3d1] [color:#211c1d] [font-size:16px] [&_strong]:[font-size:18px]">
-                <span>Order total</span>
-                <strong>{money(selectedOrder.total)}</strong>
-              </div>
-            </div>
-          </section>
+      <Card padded={false}>
+        <div className="grid gap-3 border-b border-[#f1e8e5] p-4">
+          <SearchInput label="Search orders" placeholder="Search by order number, name, email or phone" value={query} onChange={setQuery} />
+          <Tabs
+            label="Filter by status"
+            value={filter}
+            onChange={setFilter}
+            options={(["All", "New", "Processing", "Shipped", "Delivered", "Cancelled"] as Filter[]).map((status) => ({
+              value: status,
+              label: status,
+              count: count(status),
+            }))}
+          />
         </div>
-      )}
+
+        {visible.length ? (
+          <div className="overflow-x-auto">
+            <table className={tableClass}>
+              <thead>
+                <tr>
+                  <th className={thClass}>Order</th>
+                  <th className={thClass}>Customer</th>
+                  <th className={thClass}>Items</th>
+                  <th className={thClass}>Total</th>
+                  <th className={thClass}>Payment</th>
+                  <th className={thClass}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((order) => (
+                  <tr key={order.id} onClick={() => setOpenId(order.id)} className="cursor-pointer transition-colors hover:bg-[#fdfaf8]">
+                    <td className={tdClass}>
+                      <button type="button" className="font-medium text-charcoal hover:text-burgundy" onClick={() => setOpenId(order.id)}>
+                        {formatOrderId(order.id)}
+                      </button>
+                      <span className="block text-[12px] text-taupe">{order.date}</span>
+                    </td>
+                    <td className={tdClass}>
+                      <span className="block">{order.customer || "Guest"}</span>
+                      <span className="block text-[12px] text-taupe">{order.customerEmail}</span>
+                    </td>
+                    <td className={tdClass + " text-taupe"}>{order.items.reduce((sum, item) => sum + item.qty, 0)}</td>
+                    <td className={tdClass + " font-medium [font-variant-numeric:tabular-nums]"}>{money(order.total)}</td>
+                    <td className={tdClass}>
+                      <span className="block text-[13px]">{order.paymentMethod ?? "—"}</span>
+                      <span className="block text-[12px] text-taupe">{order.paymentStatus}</span>
+                    </td>
+                    <td className={tdClass}>
+                      <Badge tone={orderStatusTone[order.status]}>{order.status}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState
+            icon={ShoppingCart}
+            title={orders.length ? "No orders match" : "No orders yet"}
+            text={orders.length ? "Try another status or search." : "When customers check out, their orders appear here."}
+          />
+        )}
+      </Card>
+
+      <Drawer
+        open={Boolean(open)}
+        onClose={() => setOpenId(null)}
+        title={open ? formatOrderId(open.id) : "Order"}
+        subtitle={
+          open && (
+            <span className="inline-flex flex-wrap items-center gap-2">
+              Placed {open.date} <Badge tone={orderStatusTone[open.status]}>{open.status}</Badge>
+            </span>
+          )
+        }
+        footer={
+          open && open.status !== "Cancelled" && open.status !== "Delivered" ? (
+            <>
+              <Button variant="danger" className="mr-auto" onClick={() => setConfirmCancel(true)}>
+                <Ban size={15} /> Cancel order
+              </Button>
+              {nextLabel[open.status] && (
+                <Button variant="primary" onClick={() => changeStatus(open, nextLabel[open.status]!.to)}>
+                  <Check size={16} /> {nextLabel[open.status]!.label}
+                </Button>
+              )}
+            </>
+          ) : undefined
+        }
+      >
+        {open && (
+          <div className="grid gap-5">
+            {/* Progress */}
+            {open.status === "Cancelled" ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-[#e3dcdb] bg-white p-4 text-[14px] text-taupe">
+                <Ban size={18} aria-hidden="true" /> This order was cancelled and its stock was returned.
+              </div>
+            ) : (
+              <ol className="m-0 grid list-none grid-cols-4 gap-2 rounded-2xl border border-[#eadfdc] bg-white p-4" aria-label="Order progress">
+                {flow.map((step, index) => {
+                  const reached = flow.indexOf(open.status) >= index;
+                  return (
+                    <li key={step} className="flex flex-col items-center gap-2 text-center">
+                      <span
+                        className={
+                          "flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-semibold " +
+                          (reached ? "bg-burgundy text-white" : "border border-[#dcd0cd] bg-white text-taupe")
+                        }
+                        aria-hidden="true"
+                      >
+                        {reached ? <Check size={15} /> : index + 1}
+                      </span>
+                      <span className={"text-[12px] " + (reached ? "font-medium text-charcoal" : "text-taupe")}>
+                        {step}
+                        <span className="sr-only">{reached ? " (done)" : " (not yet)"}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <InfoBlock icon={User} title="Customer">
+                <strong className="block">{open.customer || "Guest"}</strong>
+                <span className="block break-all">{open.customerEmail || "No email"}</span>
+                <span className="block">{open.customerPhone || "No phone"}</span>
+              </InfoBlock>
+              <InfoBlock icon={MapPin} title="Delivery address">
+                <span className="block">{open.shippingAddress.street}</span>
+                <span className="block">
+                  {open.shippingAddress.city} {open.shippingAddress.zip}
+                </span>
+              </InfoBlock>
+              <InfoBlock icon={CreditCard} title="Payment">
+                <strong className="block">{open.paymentMethod ?? "Not recorded"}</strong>
+                <span className="block">{open.paymentStatus}</span>
+              </InfoBlock>
+            </div>
+
+            <Card title="Items" padded={false}>
+              <ul className="m-0 list-none p-0">
+                {open.items.map((item) => (
+                  <li key={`${item.productId}-${item.size ?? ""}-${item.setName ?? ""}`} className="flex items-start justify-between gap-4 border-b border-[#f3ebe8] px-5 py-3.5 last:border-b-0">
+                    <span className="min-w-0">
+                      <span className="block font-medium text-charcoal">{item.name}</span>
+                      <span className="block text-[13px] text-taupe">
+                        {item.size ? `Size ${item.size} · ` : ""}
+                        {item.qty} × {money(item.price)}
+                      </span>
+                      {item.setName && <span className="mt-1 inline-block"><Badge tone="neutral" dot={false}>Part of {item.setName}</Badge></span>}
+                    </span>
+                    <span className="flex-none font-medium [font-variant-numeric:tabular-nums]">{money(item.qty * item.price)}</span>
+                  </li>
+                ))}
+              </ul>
+              <dl className="m-0 grid grid-cols-[1fr_auto] gap-y-1.5 border-t border-[#eadfdc] bg-[#fdfaf8] px-5 py-4 text-[14px]">
+                {open.subtotal !== undefined && (
+                  <>
+                    <dt className="text-taupe">Subtotal</dt>
+                    <dd className="m-0 text-right">{money(open.subtotal)}</dd>
+                  </>
+                )}
+                {open.discount ? (
+                  <>
+                    <dt className="text-[#1f6b44]">Set savings</dt>
+                    <dd className="m-0 text-right text-[#1f6b44]">−{money(open.discount)}</dd>
+                  </>
+                ) : null}
+                {open.deliveryFee !== undefined && (
+                  <>
+                    <dt className="text-taupe">Delivery</dt>
+                    <dd className="m-0 text-right">{open.deliveryFee === 0 ? "Free" : money(open.deliveryFee)}</dd>
+                  </>
+                )}
+                <dt className="pt-1.5 text-[15px] font-semibold">Total</dt>
+                <dd className="m-0 pt-1.5 text-right text-[15px] font-semibold">{money(open.total)}</dd>
+              </dl>
+            </Card>
+          </div>
+        )}
+      </Drawer>
+
+      <ConfirmDialog
+        open={confirmCancel && Boolean(open)}
+        title={`Cancel ${open ? formatOrderId(open.id) : "order"}?`}
+        text="The items go back into stock. A cancelled order can't be reopened."
+        confirmLabel="Cancel order"
+        onCancel={() => setConfirmCancel(false)}
+        onConfirm={() => {
+          if (open) changeStatus(open, "Cancelled");
+          setConfirmCancel(false);
+        }}
+      />
     </>
+  );
+}
+
+function InfoBlock({ icon: Icon, title, children }: { icon: typeof User; title: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0 rounded-2xl border border-[#eadfdc] bg-white p-4 text-[13px] leading-relaxed text-taupe">
+      <p className="m-0 mb-2 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.8px] text-charcoal">
+        <Icon size={14} aria-hidden="true" /> {title}
+      </p>
+      <div className="[&_strong]:font-medium [&_strong]:text-charcoal">{children}</div>
+    </div>
   );
 }

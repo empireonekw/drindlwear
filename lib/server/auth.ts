@@ -130,6 +130,12 @@ export async function getCurrentUser(): Promise<UserDoc | null> {
   return db.collection<UserDoc>("users").findOne({ _id: session.userId });
 }
 
+/** The signed-in admin, or null for visitors and customers. */
+export async function getAdmin(): Promise<UserDoc | null> {
+  const user = await getCurrentUser();
+  return user?.role === "admin" ? user : null;
+}
+
 export async function destroySession() {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (token) {

@@ -5,15 +5,12 @@ import { useSearchParams } from "next/navigation";
 
 import { ProductGrid } from "@/components/product";
 import { useStore } from "@/components/store";
+import { searchProducts } from "@/lib/search";
 
 function Results() {
   const query = useSearchParams().get("q") || "";
   const { products } = useStore();
-  const matches = products.filter((product) =>
-    `${product.name} ${product.category} ${product.color}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  );
+  const matches = searchProducts(products, query);
 
   return (
     <div className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]">
