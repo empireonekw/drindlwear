@@ -39,10 +39,12 @@ async function handlePOST(request: Request) {
 
   try {
     const ip = clientIp(request);
-    const blocked = await ipBlockedUntil(ip);
+    // Independent database calls run together to keep sign-in quick on a remote database.
+    const [blocked, perIp] = await Promise.all([
+      ipBlockedUntil(ip),
+      hit("login-ip", ip, windows.minutes(15)),
+    ]);
     if (blocked) return tooMany(blocked, "Too many attempts from your network. Please try again later.");
-
-    const perIp = await hit("login-ip", ip, windows.minutes(15));
     if (perIp.count > ATTEMPTS_PER_IP) return tooMany(perIp.expiresAt);
 
     const email = normalizeEmail(str(body.email, 300));
@@ -76,9 +78,11 @@ async function handlePOST(request: Request) {
       return jsonError(401, "Incorrect email or password.");
     }
 
-    await reset("login-fail", email);
-    await users.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
-    await createSession(user._id);
+    await Promise.all([
+      reset("login-fail", email),
+      users.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } }),
+      createSession(user._id),
+    ]);
     return jsonOk({ user: toPublicUser(user) });
   } catch (error) {
     noteError(error);

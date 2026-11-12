@@ -169,20 +169,22 @@ export function tooMany(until: Date, message = "Too many attempts. Please try ag
 const MAX_BODY_BYTES = 4 * 1024;
 
 /**
- * Reads a small JSON object body. Anything else (wrong content type, too
- * big, not an object) gets a plain 400/413/415 without details.
+ * Reads a small JSON object body (4 KB unless a route allows more). Anything
+ * else (wrong content type, too big, not an object) gets a plain 400/413/415
+ * without details.
  */
 export async function readJsonBody(
   request: Request,
+  maxBytes = MAX_BODY_BYTES,
 ): Promise<{ body: Record<string, unknown> } | { response: NextResponse }> {
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
     return { response: jsonError(415, "Unsupported request.") };
   }
   const declared = Number(request.headers.get("content-length") ?? 0);
-  if (declared > MAX_BODY_BYTES) return { response: jsonError(413, "Request too large.") };
+  if (declared > maxBytes) return { response: jsonError(413, "Request too large.") };
 
   const text = await request.text().catch(() => "");
-  if (Buffer.byteLength(text) > MAX_BODY_BYTES) return { response: jsonError(413, "Request too large.") };
+  if (Buffer.byteLength(text) > maxBytes) return { response: jsonError(413, "Request too large.") };
   try {
     const parsed: unknown = JSON.parse(text);
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error();

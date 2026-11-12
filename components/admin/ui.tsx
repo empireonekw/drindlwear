@@ -316,13 +316,19 @@ export function Tabs<T extends string>({
 
 function useOverlay(open: boolean, onClose: () => void) {
   const panel = useRef<HTMLDivElement>(null);
+  // Pages usually pass a new onClose function on every render (every
+  // keystroke in a form). Keep the latest one in a ref so the effect below runs
+  // only when the overlay opens or closes, and doesn't move focus back to the
+  // first field while someone is typing.
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") closeRef.current();
     };
     window.addEventListener("keydown", onKey);
     const timer = window.setTimeout(() => {
@@ -334,7 +340,7 @@ function useOverlay(open: boolean, onClose: () => void) {
       window.clearTimeout(timer);
       previous?.focus?.({ preventScroll: true });
     };
-  }, [open, onClose]);
+  }, [open]);
   return panel;
 }
 

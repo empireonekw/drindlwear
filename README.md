@@ -8,7 +8,7 @@
   A traditional-fashion storefront with MongoDB-backed commerce APIs and an admin dashboard.
 </p>
 
-> **Project status:** Customer accounts (sign up, sign in, sign out) are real and stored in MongoDB. Everything else is still a UI preview: products come from `lib/placeholder-products.ts`, and the cart, wishlist, orders and settings are kept in the browser's localStorage.
+> **Project status:** Customer accounts and the product catalogue are real and stored in MongoDB. Products added, edited or deleted in the admin show on the storefront for every visitor. Still a UI preview: the cart, wishlist, orders and settings are kept in the browser's localStorage, and outfit sets come from `lib/placeholder-products.ts`.
 
 ## Overview
 
@@ -50,7 +50,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). `.env.local` must hold `MONGODB_URI`; the database named in the URI is used (or set `MONGODB_DB`). The `users` and `sessions` collections and their indexes are created on first use.
+Open [http://localhost:3000](http://localhost:3000). `.env.local` must hold `MONGODB_URI`; the database named in the URI is used (or set `MONGODB_DB`). The `users`, `sessions` and `catalog` collections and their indexes are created on first use. The first time the store runs against an empty `catalog`, the placeholder products are copied in so the shop isn't blank; after that the admin owns the catalogue.
 
 ### Admin account
 
@@ -98,6 +98,8 @@ npm start
 | `/account/login` | Sign in |
 | `/account/register` | Create an account |
 | `/api/auth/signup`, `/login`, `/logout`, `/me` | Account API (MongoDB, httpOnly session cookie) |
+| `/api/products` | The catalogue (public, read-only) |
+| `/api/admin/products`, `/api/admin/products/[id]` | Add, edit and delete products (admins only) |
 | `/club` | Dirndl Wear Club page |
 | `/pages/our-story` | Brand story |
 | `/pages/[slug]` | Informational demo pages |
@@ -148,8 +150,9 @@ These are raster cut-outs for the website. The guide still asks for SVG/PDF vect
 
 ## Current limitations
 
-- **Partial backend:** only accounts use MongoDB. Products, orders, payments and email are not connected yet, and admin changes to products reset on reload.
-- **Placeholder data:** `lib/placeholder-products.ts` is for UI work only; delete it once real data is connected.
+- **Partial backend:** accounts, products and product photos use MongoDB. Orders, payments and email are not connected yet; stock changes from preview checkouts stay in the browser.
+- **Placeholder data:** `lib/placeholder-products.ts` seeds the first catalogue and still provides the outfit sets.
+- **Old `products` collection:** an earlier version of the app left a `products` collection with a different shape. The store uses `catalog` and leaves it untouched.
 - **Asset review required:** Confirm image ownership and commercial usage rights before deployment.
 - **Unofficial project:** This demonstration is not affiliated with the original Krüger site.
 

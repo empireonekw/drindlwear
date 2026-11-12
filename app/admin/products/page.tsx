@@ -123,6 +123,8 @@ function Products() {
   const [form, setForm] = useState<Form>(blank);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [confirmDelete, setConfirmDelete] = useState<Product | null>(null);
+  /** True while a save or delete is on its way to the database. */
+  const [busy, setBusy] = useState(false);
 
   // Images already used in the shop, offered in the photo library.
   const projectImages = useMemo(
@@ -163,7 +165,8 @@ function Products() {
       ? Math.round((1 - Number(form.price) / Number(form.oldPrice)) * 100)
       : 0;
 
-  function save() {
+  async function save() {
+    if (busy) return;
     const found: Partial<Record<keyof Form, string>> = {};
     if (form.name.trim().length < 2) found.name = "Enter a product name.";
     if (!form.photos.length) found.photos = "Add at least one photo.";
@@ -204,16 +207,32 @@ function Products() {
       images: form.photos.slice(1),
       description: form.description.trim(),
     };
-    saveProduct(input, isNew ? undefined : (editing as number));
-    toast(isNew ? `${input.name} added to the catalogue.` : `${input.name} saved.`);
-    closeEditor();
+    setBusy(true);
+    try {
+      await saveProduct(input, isNew ? undefined : (editing as number));
+      toast(isNew ? `${input.name} added to the catalogue.` : `${input.name} saved.`);
+      closeEditor();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "The product could not be saved.", "error");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function remove(product: Product) {
-    deleteProduct(product.id);
-    setConfirmDelete(null);
-    closeEditor();
-    toast(`${product.name} deleted.`);
+  async function remove(product: Product) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await deleteProduct(product.id);
+      setConfirmDelete(null);
+      closeEditor();
+      toast(`${product.name} deleted.`);
+    } catch (error) {
+      setConfirmDelete(null);
+      toast(error instanceof Error ? error.message : "The product could not be deleted.", "error");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const stockOf = (product: Product): StockFilter => (product.stock <= 0 ? "out" : product.stock <= 3 ? "low" : "in");
@@ -360,8 +379,8 @@ function Products() {
               </Button>
             )}
             <Button onClick={closeEditor}>Cancel</Button>
-            <Button variant="primary" onClick={save}>
-              {editing === "new" ? "Add product" : "Save changes"}
+            <Button variant="primary" onClick={save} disabled={busy}>
+              {busy ? "Saving…" : editing === "new" ? "Add product" : "Save changes"}
             </Button>
           </>
         }

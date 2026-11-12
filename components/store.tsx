@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * Client store. Accounts are real (MongoDB, see app/api/auth); the signed-in
- * user is loaded from /api/auth/me. Everything else is still UI preview: the
- * cart, wishlist, orders and a few settings live in this browser's
- * localStorage, and products come from lib/placeholder-products.ts and reset
- * on reload.
+ * Client store. Accounts and products are real (MongoDB): the signed-in user
+ * is loaded from /api/auth/me, and the catalogue arrives with each page load
+ * (app/layout.tsx) and is changed through /api/admin/products. Everything else
+ * is still UI preview: the cart, wishlist, orders and a few settings live in
+ * this browser's localStorage, and outfit sets come from
+ * lib/placeholder-products.ts.
  */
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -18,7 +19,7 @@ import {
   sameCartLine,
   sumSizeStock,
 } from "@/lib/data";
-import { placeholderProducts, placeholderSets } from "@/lib/placeholder-products";
+import { placeholderSets } from "@/lib/placeholder-products";
 import { OutfitSet, setDiscounts, setPricing, totalSetDiscount } from "@/lib/sets";
 import { deliveryCharge, PaymentMethodId, paymentMethods } from "@/lib/store-policy";
 
@@ -91,8 +92,11 @@ type State = {
   remove: (id: number, size?: string, setId?: string) => void;
   quantity: (id: number, qty: number, size?: string, setId?: string) => void;
   toggleWish: (id: number) => void;
-  saveProduct: (product: ProductInput, id?: number) => Product;
-  deleteProduct: (id: number) => void;
+  /** False until the catalogue has loaded (only when the page couldn't include it). */
+  productsReady: boolean;
+  /** Saves to MongoDB. Rejects with a message to show when it fails. */
+  saveProduct: (product: ProductInput, id?: number) => Promise<Product>;
+  deleteProduct: (id: number) => Promise<void>;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
   checkout: (customer: Record<string, string>, payment: PaymentMethodId) => Order;
   setHeadline: (headline: string) => void;
@@ -134,10 +138,36 @@ function adjustStock(product: Product, size: string | undefined, delta: number):
   return { ...product, stock: Math.max(0, product.stock + delta) };
 }
 
-export function StoreProvider({ children }: { children: React.ReactNode }) {
+/** Calls a product API route and returns its JSON, or throws the server's message. */
+async function productRequest<T>(url: string, body: unknown): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error("Could not reach the server. Check your connection and try again.");
+  }
+  const data = (await response.json().catch(() => ({}))) as T & { error?: string };
+  if (response.status === 403) throw new Error("Your admin session has ended. Sign in again.");
+  if (!response.ok) throw new Error(data.error ?? "The product could not be saved. Please try again.");
+  return data;
+}
+
+export function StoreProvider({
+  children,
+  initialProducts,
+}: {
+  children: React.ReactNode;
+  /** The catalogue from the server, or null when the page couldn't load it. */
+  initialProducts: Product[] | null;
+}) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<number[]>([]);
-  const [catalog, setCatalog] = useState<Product[]>(placeholderProducts);
+  const [catalog, setCatalog] = useState<Product[]>(initialProducts ?? []);
+  const [productsReady, setProductsReady] = useState(initialProducts !== null);
   const sets = placeholderSets;
   const [orders, setOrders] = useState<Order[]>([]);
   const [headline, setHeadline] = useState(DEFAULT_HEADLINE);
@@ -145,6 +175,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [ready, setReady] = useState(false);
+
+  // The page normally arrives with the catalogue; if it didn't, fetch it.
+  useEffect(() => {
+    if (initialProducts !== null) return;
+    let cancelled = false;
+    fetch("/api/products", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data: { products?: Product[] }) => {
+        if (!cancelled && Array.isArray(data.products)) setCatalog(data.products);
+      })
+      .catch((error) => console.error("Could not load products:", error))
+      .finally(() => {
+        if (!cancelled) setProductsReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Ask the server who is signed in (the session cookie is httpOnly).
   useEffect(() => {
@@ -268,24 +317,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       current.includes(id) ? current.filter((itemId) => itemId !== id) : [...current, id],
     );
 
-  const saveProduct = (input: ProductInput, id?: number) => {
+  const saveProduct = async (input: ProductInput, id?: number) => {
     const { oldPrice, ...rest } = input;
-    const existing = id === undefined ? undefined : catalog.find((product) => product.id === id);
-    const nextId = id ?? Math.max(0, ...catalog.map((product) => product.id)) + 1;
-    // Keep fields the admin form doesn't edit (gallery images, occasions…).
-    const product: Product = { ...existing, ...rest, id: nextId };
-    if (typeof oldPrice === "number") product.oldPrice = oldPrice;
-    else delete product.oldPrice;
-    if (product.sizeStock) product.stock = sumSizeStock(product.sizeStock);
-    setCatalog((current) =>
+    const body = { ...rest, ...(typeof oldPrice === "number" ? { oldPrice } : {}) };
+    const { product } =
       id === undefined
-        ? [...current, product]
-        : current.map((entry) => (entry.id === id ? product : entry)),
+        ? await productRequest<{ product: Product }>("/api/admin/products", { product: body })
+        : await productRequest<{ product: Product }>(`/api/admin/products/${id}`, { action: "update", product: body });
+    setCatalog((current) =>
+      current.some((entry) => entry.id === product.id)
+        ? current.map((entry) => (entry.id === product.id ? product : entry))
+        : [...current, product],
     );
     return product;
   };
 
-  const deleteProduct = (id: number) => {
+  const deleteProduct = async (id: number) => {
+    await productRequest(`/api/admin/products/${id}`, { action: "delete" });
     setCatalog((current) => current.filter((product) => product.id !== id));
     setItems((current) => current.filter((item) => item.id !== id));
     setWishlist((current) => current.filter((itemId) => itemId !== id));
@@ -393,6 +441,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         items,
         wishlist,
         products: catalog,
+        productsReady,
         sets,
         orders,
         headline,

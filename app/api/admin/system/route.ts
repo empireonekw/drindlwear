@@ -1,6 +1,6 @@
 import { getAdmin } from "@/lib/server/auth";
 import { IMAGE_BUCKET } from "@/lib/server/images";
-import { probeHeader, recentErrors, serverStartedAt, summarize, type GroupSummary } from "@/lib/server/metrics";
+import { probeHeader, processStats, recentErrors, serverStartedAt, summarize, type GroupSummary } from "@/lib/server/metrics";
 import { getDb } from "@/lib/server/mongodb";
 import { jsonError, jsonOk } from "@/lib/server/security";
 
@@ -17,6 +17,16 @@ const worst = (checks: Check[], fallback: Level = "ok"): Level =>
   checks.reduce<Level>((level, check) => (rank[check.level] > rank[level] ? check.level : level), checks.length ? "idle" : fallback);
 
 const ms = (value: number) => `${Math.round(value)} ms`;
+
+/**
+ * The dev server compiles each page and route on its first visit, which can
+ * take many seconds. Slowness and timeouts there are not real outages.
+ */
+const devServer = process.env.NODE_ENV !== "production";
+const COMPILING_NOTE = "The dev server compiles pages on first visit; this clears on the next check.";
+
+/** p95 means little over a handful of requests, so warn only with enough traffic. */
+const MIN_SAMPLES_FOR_P95 = 5;
 
 async function timed(url: string, init: RequestInit = {}, timeoutMs = 15000) {
   const started = performance.now();
@@ -35,10 +45,14 @@ function trafficChecks(summary: GroupSummary): Check[] {
     checks.push({ label: "Server errors", level: "error", detail: `${summary.errors5m} failed request${summary.errors5m === 1 ? "" : "s"} in the last 5 minutes. See recent errors below.` });
   }
   if (summary.p95 !== null) {
+    const slow = summary.p95 > 2000;
+    const enough = summary.total5m >= MIN_SAMPLES_FOR_P95;
     checks.push({
       label: "Response time",
-      level: summary.p95 > 2000 ? "warn" : "ok",
-      detail: `95% of requests answered within ${ms(summary.p95)} (last 5 min).`,
+      level: !slow ? "ok" : enough ? "warn" : "info",
+      detail: enough
+        ? `95% of requests answered within ${ms(summary.p95)} (last 5 min).`
+        : `Slowest of ${summary.total5m} request${summary.total5m === 1 ? "" : "s"}: ${ms(summary.p95)} (last 5 min). Too few to judge yet.`,
     });
   }
   if (summary.clientErrors5m) {
@@ -49,8 +63,16 @@ function trafficChecks(summary: GroupSummary): Check[] {
 const trafficMetric = (summary: GroupSummary) =>
   summary.total5m ? `${summary.perMin}/min · p95 ${summary.p95 ?? "–"} ms` : "No traffic";
 
-// Probe results are reused for a few seconds so several open admin tabs don't hammer the server.
-const cache = globalThis as unknown as { dwProbe?: { at: number; data: Record<string, NodeState> } };
+// Probe results are reused for a few seconds so several open admin tabs don't
+// hammer the server, and requests arriving while a run is in progress share it.
+const cache = globalThis as unknown as {
+  dwProbe?: { at: number; data: Record<string, NodeState> };
+  dwProbeRunning?: Promise<Record<string, NodeState>>;
+};
+
+/** True when a probe failed only because the dev server was still compiling. */
+const compiling = (result: Awaited<ReturnType<typeof timed>>) =>
+  devServer && !result.ok && /timeout|aborted/i.test(result.error);
 
 async function runProbes(origin: string): Promise<Record<string, NodeState>> {
   const [home, collection, product, crossSite, adminGuard, me, image] = await Promise.all([
@@ -64,11 +86,17 @@ async function runProbes(origin: string): Promise<Record<string, NodeState>> {
   ]);
 
   const pageCheck = (label: string, result: Awaited<ReturnType<typeof timed>>): Check =>
-    !result.ok
-      ? { label, level: "error", detail: `Did not respond: ${result.error}` }
-      : result.status !== 200
-        ? { label, level: "error", detail: `Returned HTTP ${result.status} instead of 200.` }
-        : { label, level: result.ms > 4000 ? "warn" : "ok", detail: `Loaded in ${ms(result.ms)}${result.ms > 4000 ? " (slow)" : ""}.` };
+    compiling(result)
+      ? { label, level: "info", detail: `Still compiling. ${COMPILING_NOTE}` }
+      : !result.ok
+        ? { label, level: "error", detail: `Did not respond: ${result.error}` }
+        : result.status !== 200
+          ? { label, level: "error", detail: `Returned HTTP ${result.status} instead of 200.` }
+          : result.ms > 4000
+            ? devServer
+              ? { label, level: "info", detail: `Loaded in ${ms(result.ms)}. ${COMPILING_NOTE}` }
+              : { label, level: "warn", detail: `Loaded in ${ms(result.ms)} (slow).` }
+            : { label, level: "ok", detail: `Loaded in ${ms(result.ms)}.` };
   const pages = [pageCheck("Homepage", home), pageCheck("Collection page", collection), pageCheck("Product page", product)];
 
   const csp = home.headers.get("content-security-policy");
@@ -85,19 +113,25 @@ async function runProbes(origin: string): Promise<Record<string, NodeState>> {
 
   const location = adminGuard.headers.get("location") ?? "";
   const admin: Check[] = [
-    !adminGuard.ok
+    compiling(adminGuard)
+      ? { label: "Admin lock", level: "info", detail: `Still compiling. ${COMPILING_NOTE}` }
+      : !adminGuard.ok
       ? { label: "Admin lock", level: "error", detail: `Admin pages did not respond: ${adminGuard.error}` }
       : adminGuard.status >= 300 && adminGuard.status < 400 && location.includes("/account/login")
         ? { label: "Admin lock", level: "ok", detail: "Signed-out visitors are sent to sign in." }
         : { label: "Admin lock", level: "error", detail: `Admin pages answered ${adminGuard.status} to a signed-out visitor. They must redirect to sign in.` },
   ];
 
-  const authProbe: Check = !me.ok
+  const authProbe: Check = compiling(me)
+    ? { label: "Health check", level: "info", detail: `Still compiling. ${COMPILING_NOTE}` }
+    : !me.ok
     ? { label: "Health check", level: "error", detail: `Account API did not respond: ${me.error}` }
     : me.status === 200
       ? { label: "Health check", level: "ok", detail: `Answered in ${ms(me.ms)}.` }
       : { label: "Health check", level: "error", detail: `Account API returned ${me.status}. MongoDB may be unreachable.` };
-  const imageProbe: Check = !image.ok
+  const imageProbe: Check = compiling(image)
+    ? { label: "Health check", level: "info", detail: `Still compiling. ${COMPILING_NOTE}` }
+    : !image.ok
     ? { label: "Health check", level: "error", detail: `Photo API did not respond: ${image.error}` }
     : image.status === 404
       ? { label: "Health check", level: "ok", detail: `Answered in ${ms(image.ms)}.` }
@@ -122,7 +156,10 @@ async function handleGET(request: Request) {
 
   // Health checks (cached 8 s).
   if (!cache.dwProbe || Date.now() - cache.dwProbe.at > 8000) {
-    cache.dwProbe = { at: Date.now(), data: await runProbes(origin) };
+    cache.dwProbeRunning ??= runProbes(origin).finally(() => {
+      cache.dwProbeRunning = undefined;
+    });
+    cache.dwProbe = { at: Date.now(), data: await cache.dwProbeRunning };
   }
   const probes = cache.dwProbe.data;
   nodes.pages = probes.pages;
@@ -133,6 +170,7 @@ async function handleGET(request: Request) {
   const auth = summarize("auth");
   const uploads = summarize("uploads");
   const images = summarize("images");
+  const products = summarize("products");
   const authChecks = [...probes.authProbe.checks, ...trafficChecks(auth)];
   nodes.auth = { level: worst(authChecks), metric: trafficMetric(auth), checks: authChecks, traffic: auth.perMin };
   const uploadChecks = trafficChecks(uploads);
@@ -142,12 +180,12 @@ async function handleGET(request: Request) {
   nodes.browser = {
     level: "info",
     metric: "Kept in each browser",
-    checks: [{ label: "Not on the server yet", level: "info", detail: "Products, cart, orders and settings are preview data saved in each visitor's browser. Moving them to MongoDB is the next big step." }],
+    checks: [{ label: "Not on the server yet", level: "info", detail: "Cart, orders and settings are preview data saved in each visitor's browser. Products are in MongoDB; orders are the next step." }],
   };
 
   // Visitors and edge.
-  const perMin = auth.perMin + uploads.perMin + images.perMin;
-  nodes.visitors = { traffic: perMin, level: perMin ? "ok" : "idle", metric: `${perMin} API requests/min`, checks: [{ label: "Live traffic", level: perMin ? "ok" : "idle", detail: `${auth.total5m + uploads.total5m + images.total5m} API requests in the last 5 minutes.` }] };
+  const perMin = auth.perMin + uploads.perMin + images.perMin + products.perMin;
+  nodes.visitors = { traffic: perMin, level: perMin ? "ok" : "idle", metric: `${perMin} API requests/min`, checks: [{ label: "Live traffic", level: perMin ? "ok" : "idle", detail: `${auth.total5m + uploads.total5m + images.total5m + products.total5m} API requests in the last 5 minutes.` }] };
   const production = process.env.NODE_ENV === "production";
   // Next.js itself adds x-forwarded-for with the local address, so only a non-local value means a real proxy.
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
@@ -211,12 +249,36 @@ async function handleGET(request: Request) {
   ];
   nodes.config = { level: worst(configChecks), metric: production ? "Production" : "Development", checks: configChecks };
 
+  // Headline numbers for the stat cards.
+  const groups = [auth, uploads, images, products];
+  const p95s = groups.map((group) => group.p95).filter((value): value is number => value !== null);
+  const stats = {
+    requestsPerMin: perMin,
+    errors5m: groups.reduce((total, group) => total + group.errors5m, 0),
+    rateLimited5m: groups.reduce((total, group) => total + group.rateLimited5m, 0),
+    slowestP95: p95s.length ? Math.max(...p95s) : null,
+    ...processStats(),
+  };
+
   return jsonOk({
     generatedAt: new Date().toISOString(),
+    stats,
     startedAt: new Date(serverStartedAt()).toISOString(),
     nodes,
     errors: recentErrors(),
   });
 }
 
-export const GET = handleGET;
+/** Never fails silently: an unexpected crash comes back with its reason so the page can show it. */
+export async function GET(request: Request) {
+  try {
+    return await handleGET(request);
+  } catch (error) {
+    const message = (error instanceof Error ? error.message : String(error))
+      .split("\n")[0]
+      .replace(/mongodb(\+srv)?:\/\/\S+/gi, "mongodb://…")
+      .slice(0, 200);
+    console.error("System health check crashed:", error);
+    return jsonError(500, `The health check crashed: ${message}`);
+  }
+}

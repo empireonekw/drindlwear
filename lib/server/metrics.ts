@@ -1,6 +1,7 @@
 import "server-only";
 
 import { AsyncLocalStorage } from "async_hooks";
+import { monitorEventLoopDelay, type IntervalHistogram } from "perf_hooks";
 
 import { fingerprint } from "./security";
 
@@ -10,7 +11,7 @@ import { fingerprint } from "./security";
  * server instance counts its own traffic.
  */
 
-export type RouteGroup = "auth" | "uploads" | "images";
+export type RouteGroup = "auth" | "uploads" | "images" | "products";
 
 type Sample = { at: number; ms: number; status: number };
 export type ServerError = { at: string; group: RouteGroup; status: number; message: string; path: string };
@@ -19,8 +20,10 @@ const KEEP_MS = 15 * 60 * 1000;
 const store = globalThis as unknown as {
   dwMetrics?: { samples: Record<RouteGroup, Sample[]>; errors: ServerError[]; startedAt: number };
 };
-store.dwMetrics ??= { samples: { auth: [], uploads: [], images: [] }, errors: [], startedAt: Date.now() };
+store.dwMetrics ??= { samples: { auth: [], uploads: [], images: [], products: [] }, errors: [], startedAt: Date.now() };
 const metrics = store.dwMetrics;
+// A dev server that was running before a group was added keeps its old object.
+metrics.samples.products ??= [];
 
 export const serverStartedAt = () => metrics.startedAt;
 
@@ -91,6 +94,8 @@ export type GroupSummary = {
   total5m: number;
   errors5m: number;
   clientErrors5m: number;
+  /** Requests refused with 429 (rate limited) in the last 5 minutes. */
+  rateLimited5m: number;
   p95: number | null;
   lastRequestAt: string | null;
 };
@@ -106,9 +111,33 @@ export function summarize(group: RouteGroup): GroupSummary {
     total5m: last5.length,
     errors5m: last5.filter((sample) => sample.status >= 500).length,
     clientErrors5m: last5.filter((sample) => sample.status >= 400 && sample.status < 500).length,
+    rateLimited5m: last5.filter((sample) => sample.status === 429).length,
     p95: sorted.length ? Math.round(sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))]) : null,
     lastRequestAt: list.length ? new Date(list[list.length - 1].at).toISOString() : null,
   };
 }
 
 export const recentErrors = () => metrics.errors.slice(0, 20);
+
+// ---------------------------------------------------------------------------
+// This server process: memory, uptime and how busy its event loop is.
+
+const loopStore = globalThis as unknown as { dwLoop?: IntervalHistogram };
+if (!loopStore.dwLoop) {
+  loopStore.dwLoop = monitorEventLoopDelay({ resolution: 20 });
+  loopStore.dwLoop.enable();
+}
+
+export type ProcessStats = { memoryMb: number; uptimeSec: number; loopMs: number };
+
+/** Memory in use (RSS), seconds since start, and average event-loop delay. */
+export function processStats(): ProcessStats {
+  const loop = loopStore.dwLoop!;
+  const loopMs = Number.isFinite(loop.mean) ? loop.mean / 1e6 : 0;
+  loop.reset();
+  return {
+    memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    uptimeSec: Math.round(process.uptime()),
+    loopMs: Math.round(loopMs),
+  };
+}

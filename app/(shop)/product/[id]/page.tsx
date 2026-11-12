@@ -30,9 +30,12 @@ const sectionTitle =
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
-  const { products } = useStore();
+  const { products, productsReady } = useStore();
   const product = products.find((item) => item.id === Number(id));
 
+  if (!product && !productsReady) {
+    return <div className="py-24 text-center text-[#786565]">Loading…</div>;
+  }
   if (!product) {
     return <div className="py-24 text-center text-[#786565]">Product not found.</div>;
   }
