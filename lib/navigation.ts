@@ -1,10 +1,11 @@
 import { colorFamilies, dirndlLengths, occasions } from "./data";
 
-export type NavLink = { label: string; href: string; note?: string };
+export type NavLink = { label: string; href: string; note?: string; highlight?: boolean };
 export type NavColumn = { title: string; links: NavLink[] };
 export type NavItem = {
   label: string;
-  href: string;
+  /** Where the top-level link goes. Items without one only open their menu. */
+  href?: string;
   /** Present when the item opens a mega-menu. */
   columns?: NavColumn[];
   /** Optional picture tile shown at the end of the mega-menu. */
@@ -13,25 +14,6 @@ export type NavItem = {
 };
 
 export const mainNav: NavItem[] = [
-  { label: "Sale", href: "/collections/sale", highlight: true },
-  {
-    label: "Occasions",
-    href: "/collections/occasions",
-    columns: [
-      {
-        title: "Shop by occasion",
-        links: occasions.map((occasion) => ({
-          label: occasion.label,
-          href: `/collections/occasion-${occasion.value}`,
-        })),
-      },
-    ],
-    feature: {
-      title: "Festival looks",
-      href: "/collections/occasion-festival",
-      image: "/images/asset-02.jpeg",
-    },
-  },
   {
     label: "Women",
     href: "/collections/women",
@@ -102,6 +84,36 @@ export const mainNav: NavItem[] = [
     },
   },
   { label: "Kids", href: "/collections/kids" },
-  { label: "Accessories", href: "/collections/accessories" },
-  { label: "Journal", href: "/pages/style-journal" },
+  {
+    // Everything else, kept out of the bar so it stays short.
+    label: "Others",
+    columns: [
+      {
+        title: "Sale",
+        links: [{ label: "Shop the sale", href: "/collections/sale", highlight: true }],
+      },
+      {
+        title: "Shop by occasion",
+        links: [
+          ...occasions.map((occasion) => ({
+            label: occasion.label,
+            href: `/collections/occasion-${occasion.value}`,
+          })),
+          { label: "All occasions", href: "/collections/occasions" },
+        ],
+      },
+      {
+        title: "More",
+        links: [
+          { label: "Accessories", href: "/collections/accessories" },
+          { label: "Style journal", href: "/pages/style-journal" },
+        ],
+      },
+    ],
+    feature: {
+      title: "Festival looks",
+      href: "/collections/occasion-festival",
+      image: "/images/asset-02.jpeg",
+    },
+  },
 ];

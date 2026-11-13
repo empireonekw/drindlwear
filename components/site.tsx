@@ -46,13 +46,34 @@ export function Header() {
    * menu, so keep it closed until the pointer leaves that item.
    */
   const [megaSuppressed, setMegaSuppressed] = useState(false);
+  /** Desktop: the menu opened by clicking its name (hover opens menus too). */
+  const [clickOpen, setClickOpen] = useState<string | null>(null);
   const { items, wishlist, user } = useStore();
 
   function closeMenus() {
     setMenu(false);
     setOpenSection(null);
     setMegaSuppressed(true);
+    setClickOpen(null);
   }
+
+  // A menu opened by click closes on a click elsewhere or on Escape.
+  useEffect(() => {
+    if (!clickOpen) return;
+    const onPointer = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (!target?.closest(`[data-nav-item="${clickOpen}"]`)) setClickOpen(null);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setClickOpen(null);
+    };
+    document.addEventListener("mousedown", onPointer);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [clickOpen]);
   const cartCount = items.reduce((total, item) => total + item.qty, 0);
 
   function closeSearch() {
@@ -87,7 +108,7 @@ export function Header() {
   return (
     <>
       <AnnouncementBar hidden={menu} />
-      <header className={menu ? "header menu-open [background:#fbf5f2] [position:sticky] [top:0] [z-index:40] [border-bottom:1px_solid_#eadfdc] min-[1360px]:[display:grid] min-[1360px]:[grid-template-columns:minmax(0,_1fr)_auto_minmax(0,_1fr)] min-[1360px]:[align-items:center] min-[1360px]:[column-gap:24px] min-[1360px]:[padding:0_28px] max-[1359px]:[&.menu-open]:[z-index:60]" : "header [background:#fbf5f2] [position:sticky] [top:0] [z-index:40] [border-bottom:1px_solid_#eadfdc] min-[1360px]:[display:grid] min-[1360px]:[grid-template-columns:minmax(0,_1fr)_auto_minmax(0,_1fr)] min-[1360px]:[align-items:center] min-[1360px]:[column-gap:24px] min-[1360px]:[padding:0_28px] max-[1359px]:[&.menu-open]:[z-index:60]"}>
+      <header className={menu ? "header menu-open [background:#fbf5f2] [position:sticky] [top:0] [z-index:40] [border-bottom:1px_solid_#eadfdc] min-[1360px]:[display:grid] min-[1360px]:[grid-template-columns:minmax(0,_1fr)_auto_minmax(0,_1fr)] min-[1360px]:[align-items:center] min-[1360px]:[column-gap:24px] min-[1360px]:[padding:0_clamp(40px,_4.5vw,_96px)] max-[1359px]:[&.menu-open]:[z-index:60]" : "header [background:#fbf5f2] [position:sticky] [top:0] [z-index:40] [border-bottom:1px_solid_#eadfdc] min-[1360px]:[display:grid] min-[1360px]:[grid-template-columns:minmax(0,_1fr)_auto_minmax(0,_1fr)] min-[1360px]:[align-items:center] min-[1360px]:[column-gap:24px] min-[1360px]:[padding:0_clamp(40px,_4.5vw,_96px)] max-[1359px]:[&.menu-open]:[z-index:60]"}>
         <div className="header-top min-[1360px]:[display:contents] [height:76px] [max-width:none] [margin:auto] [display:flex] [align-items:center] [justify-content:space-between] [padding:0_5%] max-[1359px]:[height:75px] max-[1359px]:[display:grid] max-[1359px]:[grid-template-columns:minmax(36px,_1fr)_auto_minmax(0,_1fr)] max-[1359px]:[gap:8px] max-[1359px]:[padding:0_16px] max-[1359px]:[&_>_.mobile]:[display:flex] max-[1359px]:[&_>_.mobile]:[align-items:center] max-[1359px]:[&_>_.mobile]:[justify-content:center] max-[1359px]:[&_>_.mobile]:[width:36px] max-[1359px]:[&_>_.mobile]:[height:40px] max-[1359px]:[&_>_.mobile]:[justify-self:start] max-[1359px]:[&_>_.logo]:[justify-self:center] max-[430px]:[grid-template-columns:minmax(32px,_1fr)_auto_minmax(0,_1fr)] max-[430px]:[gap:4px] max-[430px]:[padding:0_10px]">
           <button
             aria-label={menu ? "Close menu" : "Open menu"}
@@ -129,9 +150,9 @@ export function Header() {
               <Search />
             </button>
             <Link
-              aria-label={user ? `Account: ${user.name}` : "Sign in"}
-              title={user ? user.name : "Sign in"}
-              href="/account"
+              aria-label={user ? `Account: ${user.name}` : "Create an account"}
+              title={user ? user.name : "Create an account"}
+              href={user ? "/account" : "/account/register"}
             >
               <UserRound />
               {user && (
@@ -184,17 +205,42 @@ export function Header() {
                 <div
                   className={navItemClass + hoverOpen}
                   key={item.label}
+                  data-nav-item={item.label}
                   onMouseLeave={() => setMegaSuppressed(false)}
                 >
-                  <Link
-                    href={item.href}
-                    onClick={closeMenus}
-                    className={
-                      topLinkClass + linkColor + (item.columns ? " max-[1359px]:[display:none]" : "")
-                    }
-                  >
-                    {item.label}
-                  </Link>
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      onClick={closeMenus}
+                      className={
+                        topLinkClass + linkColor + (item.columns ? " max-[1359px]:[display:none]" : "")
+                      }
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    // Desktop: a name with no page of its own opens its menu on click.
+                    <button
+                      type="button"
+                      aria-expanded={clickOpen === item.label}
+                      aria-controls={`${sectionId}-mega`}
+                      onClick={() => {
+                        setMegaSuppressed(false);
+                        setClickOpen(clickOpen === item.label ? null : item.label);
+                      }}
+                      className={topLinkClass + linkColor + " [gap:6px] max-[1359px]:[display:none]"}
+                    >
+                      {item.label}
+                      <ChevronDown
+                        size={14}
+                        aria-hidden="true"
+                        className={
+                          "[transition:transform_180ms_ease]" +
+                          (clickOpen === item.label ? " [transform:rotate(180deg)]" : "")
+                        }
+                      />
+                    </button>
+                  )}
 
                   {item.columns && (
                     <>
@@ -221,14 +267,21 @@ export function Header() {
                           id={sectionId}
                           className="[display:none] max-[1359px]:[display:grid] max-[1359px]:[gap:18px] max-[1359px]:[padding:0_27px_22px]"
                         >
-                          <Link href={item.href} onClick={closeMenus} className={megaLinkClass + " [font-weight:600]"}>
-                            Shop all {item.label.toLowerCase()}
-                          </Link>
+                          {item.href && (
+                            <Link href={item.href} onClick={closeMenus} className={megaLinkClass + " [font-weight:600]"}>
+                              Shop all {item.label.toLowerCase()}
+                            </Link>
+                          )}
                           {item.columns.map((column) => (
                             <div key={column.title}>
                               <p className={columnTitleClass + " [margin:0_0_4px]"}>{column.title}</p>
                               {column.links.map((link) => (
-                                <Link key={link.href} href={link.href} onClick={closeMenus} className={megaLinkClass}>
+                                <Link
+                                  key={link.href}
+                                  href={link.href}
+                                  onClick={closeMenus}
+                                  className={megaLinkClass + (link.highlight ? " [color:#781d2d] [font-weight:600]" : "")}
+                                >
                                   {link.label}
                                   {link.note && (
                                     <span className="[margin-left:8px] [font-size:12px] [color:#786565]">{link.note}</span>
@@ -241,13 +294,24 @@ export function Header() {
                       )}
 
                       {/* Desktop: mega-menu panel, full width under the header */}
-                      <div className="mega [display:none] [position:absolute] [left:0] [right:0] [top:100%] [z-index:45] [background:#fff] [border-top:1px_solid_#eadfdc] [box-shadow:0_18px_30px_rgb(33_28_29_/_10%)] max-[1359px]:[display:none]">
+                      <div
+                        id={`${sectionId}-mega`}
+                        className={
+                          "mega [display:none] [position:absolute] [left:0] [right:0] [top:100%] [z-index:45] [background:#fff] [border-top:1px_solid_#eadfdc] [box-shadow:0_18px_30px_rgb(33_28_29_/_10%)] max-[1359px]:[display:none]" +
+                          (clickOpen === item.label ? " min-[1360px]:[display:block]" : "")
+                        }
+                      >
                         <div className="[max-width:1100px] [margin:0_auto] [padding:28px_32px_34px] [display:grid] [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] [gap:32px]">
                           {item.columns.map((column) => (
                             <div key={column.title}>
                               <p className={columnTitleClass + " [margin:0_0_12px]"}>{column.title}</p>
                               {column.links.map((link) => (
-                                <Link key={link.href} href={link.href} onClick={closeMenus} className={megaLinkClass}>
+                                <Link
+                                  key={link.href}
+                                  href={link.href}
+                                  onClick={closeMenus}
+                                  className={megaLinkClass + (link.highlight ? " [color:#781d2d] [font-weight:600]" : "")}
+                                >
                                   {link.label}
                                   {link.note && (
                                     <span className="[margin-left:8px] [font-size:12px] [color:#786565]">{link.note}</span>
@@ -307,7 +371,7 @@ export function Header() {
         <div
           id="site-search"
           className={
-            "searchbar grid min-[1360px]:[grid-column:1_/_-1] min-[1360px]:[margin:0_-28px] " +
+            "searchbar grid min-[1360px]:[grid-column:1_/_-1] min-[1360px]:[margin:0_calc(-1_*_clamp(40px,_4.5vw,_96px))] " +
             "duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] " +
             // Opening: visible at once so the field can take focus. Closing: hidden only after the slide.
             (search
