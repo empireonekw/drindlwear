@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Facebook,
+  ArrowUpRight,
   Heart,
-  Instagram,
   Menu,
   Search,
   ShoppingBag,
@@ -18,7 +17,7 @@ import {
   Banknote,
 } from "lucide-react";
 
-import { mainNav } from "@/lib/navigation";
+import { footerColumns, mainNav } from "@/lib/navigation";
 import { paymentMethods, promiseText } from "@/lib/store-policy";
 import { AnnouncementBar } from "./announcement-bar";
 import { HeaderSearch } from "./header-search";
@@ -429,91 +428,86 @@ export function Header() {
     </>
   );
 }
-export function Footer() {
-  const [newsletterMessage, setNewsletterMessage] = useState("");
-  const { user } = useStore();
+const footerLinkClass =
+  "group inline-flex items-center gap-2 py-[5px] text-[14px] font-medium text-[#211c1d]/80 transition-colors duration-200 hover:text-[#781d2d] focus-visible:text-[#781d2d] focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4";
 
-  function subscribe(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    // UI preview: nothing is sent or stored yet.
-    setNewsletterMessage("Thank you for subscribing.");
-    event.currentTarget.reset();
-  }
+export function Footer() {
+  const { user } = useStore();
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="footer [background:#781d2d] [color:#ffffff] [padding:65px_6%_20px] [&_h3]:[font:500_28px_var(--font-serif)] [&_h4]:[font-size:12px] [&_h4]:[letter-spacing:2px] [&_h4]:[margin-bottom:25px] [&_p]:[font-size:13px] [&_p]:[color:#d9b6b6] [&_p]:[line-height:1.9] [&_a]:[display:block] [&_a]:[color:#d9b6b6] [&_a]:[font-size:12px] [&_a]:[margin:12px_0] [&_input]:[background:transparent] [&_input]:[border:1px_solid_#d9b6b6] [&_input]:[padding:14px] [&_input]:[color:white] [&_input]:[width:100%] [&_input]:[margin:12px_0] [&_a:hover]:[color:#ffffff] [&_input::placeholder]:[color:#d9b6b6] motion-safe:[&_a]:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&_a:hover]:[color:#fff] motion-safe:[&_a:hover]:[transform:translateX(3px)]">
-      <div className="footer-grid [display:grid] [grid-template-columns:2fr_1fr_1fr_2fr] [gap:45px] [max-width:1400px] [margin:auto] max-[850px]:[grid-template-columns:repeat(2,1fr)] max-[520px]:[grid-template-columns:1fr]">
-        <div>
-          <img
-            src="/brand/dirndl-wear-logo-white.png"
-            alt="Dirndl Wear — Traditional Dresses"
-            width={240}
-            height={174}
-            className="mb-5 h-auto w-[240px]"
-          />
-          <p>Tradition meets modern elegance. Discover your signature look.</p>
-          <div className="flex gap-4">
-            <Instagram />
-            <Facebook />
+    <footer className="relative overflow-hidden border-t border-[#eadfdc] bg-gradient-to-b from-[#fbf5f2] via-[#f9eeea] to-[#f4e1dc] text-[#211c1d]">
+      <div className="mx-auto max-w-[1240px] px-6 pt-20 sm:px-10 lg:px-16">
+        <nav
+          aria-label="Footer"
+          className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4"
+        >
+          {footerColumns.map((column) => (
+            <div key={column.title}>
+              <h2 className="mb-4 font-serif text-[16px] font-medium text-[#786565]">{column.title}</h2>
+              <ul className="m-0 list-none p-0">
+                {column.links.map((link) => (
+                  <li key={link.href}>
+                    {link.external ? (
+                      <a href={link.href} target="_blank" rel="noopener noreferrer" className={footerLinkClass}>
+                        {link.label}
+                        <ArrowUpRight
+                          size={15}
+                          strokeWidth={1.8}
+                          aria-hidden="true"
+                          className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        />
+                        <span className="sr-only">(opens in a new tab)</span>
+                      </a>
+                    ) : (
+                      <Link href={link.href} className={footerLinkClass}>
+                        {link.label}
+                        {link.badge && (
+                          <span className="rounded-full border border-[#e3cfcb] bg-white px-2 py-[1px] text-[10.5px] font-medium text-[#781d2d]">
+                            {link.badge}
+                          </span>
+                        )}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+
+        <div className="mt-16 flex flex-col gap-6 border-t border-[#ead8d4] pt-8 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/" aria-label="Dirndl Wear home" className="w-fit">
+            <img
+              src="/brand/dirndl-wear-monogram.png"
+              alt=""
+              width={48}
+              height={48}
+              className="h-12 w-auto"
+            />
+          </Link>
+          <div className="flex flex-col gap-1.5 font-serif text-[15px] text-[#786565] sm:items-end">
+            <p className="m-0">© {year} Dirndl Wear. All rights reserved.</p>
+            <p className="m-0 text-[13.5px]">
+              We accept {paymentMethods.map((method) => method.label).join(" · ")}
+            </p>
+            {user?.role === "admin" && (
+              <Link href="/admin" className="text-[13.5px] text-[#781d2d] underline-offset-4 hover:underline">
+                Admin dashboard
+              </Link>
+            )}
           </div>
         </div>
-        <div>
-          <h4>SERVICE</h4>
-          {["Contact", "Shipping & Delivery", "Returns", "FAQ", "Size Guide"].map(
-            (item) => (
-              <Link
-                key={item}
-                href={`/pages/${item.toLowerCase().replaceAll(" ", "-")}`}
-              >
-                {item}
-              </Link>
-            ),
-          )}
-        </div>
-        <div>
-          <h4>ABOUT US</h4>
-          {[
-            "Our Story",
-            "Style Journal",
-            "Careers",
-            "Privacy Policy",
-            "Legal Notice",
-          ].map((item) => (
-            <Link
-              key={item}
-              href={`/pages/${item.toLowerCase().replaceAll(" ", "-")}`}
-            >
-              {item}
-            </Link>
-          ))}
-        </div>
-        <div>
-          <h4>NEWSLETTER</h4>
-          <p>New collections, offers and inspiration delivered to your inbox.</p>
-          <form
-            onSubmit={subscribe}
-          >
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="Your email address"
-            />
-            <button className="btn [display:inline-flex] [align-items:center] [justify-content:center] [background:#ffffff] [color:#781d2d] [font-weight:600] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#d9b6b6] [&:focus-visible]:[outline:2px_solid_#ffffff] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]">SUBSCRIBE</button>
-          </form>
-          {newsletterMessage && <p role="status">{newsletterMessage}</p>}
-        </div>
       </div>
-      <div className="footer-bottom [border-top:1px_solid_#9b4a57] [margin-top:50px] [padding-top:20px] [font-size:11px] [color:#d9b6b6] [display:flex] [justify-content:space-between] [&_a]:[margin:0] [flex-wrap:wrap] [align-items:center] [gap:14px]">
-        <span>© 2026 Dirndl Wear demo storefront · Unofficial educational frontend</span>
-        <ul aria-label="Payment methods" className="m-0 flex list-none flex-wrap gap-2 p-0">
-          {paymentMethods.map((method) => (
-            <li key={method.id} className="border border-[#a85a66] px-2.5 py-1 text-[11px] text-[#d9b6b6]">
-              {method.label}
-            </li>
-          ))}
-        </ul>
-        {user?.role === "admin" && <Link href="/admin">Admin Dashboard</Link>}
+
+      {/* Large embossed wordmark, cut off by the bottom edge. Decorative only. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none mx-auto mt-6 h-[0.68em] max-w-[1400px] select-none overflow-hidden text-center font-serif text-[clamp(48px,18.5vw,290px)] font-medium leading-[1] tracking-[-0.01em]"
+      >
+        <span className="inline-block whitespace-nowrap bg-gradient-to-b from-[#e0aea9] via-[#e9c2bd] to-[#f3dbd6] bg-clip-text text-transparent [-webkit-text-stroke:1px_rgb(120_29_45_/_12%)] [filter:drop-shadow(0_2px_0_rgb(255_255_255_/_0.9))_drop-shadow(0_-1px_0_rgb(120_29_45_/_0.1))]">
+          Dirndl Wear
+        </span>
       </div>
     </footer>
   );

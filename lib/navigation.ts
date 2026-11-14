@@ -13,6 +13,61 @@ export type NavItem = {
   highlight?: boolean;
 };
 
+export type FooterLink = {
+  label: string;
+  href: string;
+  /** Small pill after the label, e.g. "New". */
+  badge?: string;
+  /** Opens another website in a new tab, shown with an arrow. */
+  external?: boolean;
+};
+export type FooterColumn = { title: string; links: FooterLink[] };
+
+export const footerColumns: FooterColumn[] = [
+  {
+    title: "Shop",
+    links: [
+      { label: "Women", href: "/collections/women" },
+      { label: "Men", href: "/collections/men" },
+      { label: "Kids", href: "/collections/kids" },
+      { label: "Outfit sets", href: "/sets", badge: "New" },
+      { label: "Sale", href: "/collections/sale" },
+    ],
+  },
+  {
+    title: "Help",
+    links: [
+      { label: "Contact", href: "/pages/contact" },
+      { label: "Shipping & Delivery", href: "/pages/shipping-&-delivery" },
+      { label: "Returns", href: "/pages/returns" },
+      { label: "FAQ", href: "/pages/faq" },
+      { label: "Size Guide", href: "/pages/size-guide" },
+    ],
+  },
+  {
+    title: "Dirndl Wear",
+    links: [
+      { label: "Our Story", href: "/pages/our-story" },
+      { label: "Style Journal", href: "/pages/style-journal" },
+      { label: "Dirndl Wear Club", href: "/club" },
+      { label: "Careers", href: "/pages/careers" },
+      { label: "Privacy Policy", href: "/pages/privacy-policy" },
+      { label: "Legal Notice", href: "/pages/legal-notice" },
+    ],
+  },
+  {
+    title: "Social",
+    // TODO: point these at the store's own profiles once they exist.
+    links: [
+      { label: "Instagram", href: "https://www.instagram.com/", external: true },
+      { label: "Facebook", href: "https://www.facebook.com/", external: true },
+      { label: "TikTok", href: "https://www.tiktok.com/", external: true },
+      { label: "Pinterest", href: "https://www.pinterest.com/", external: true },
+      { label: "YouTube", href: "https://www.youtube.com/", external: true },
+    ],
+  },
+];
+
 export const mainNav: NavItem[] = [
   {
     label: "Women",
