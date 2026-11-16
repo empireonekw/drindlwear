@@ -25,8 +25,8 @@ export default function Settings() {
   }
 
   const policyRows: [string, string][] = [
-    ["Free delivery from", money(storePolicy.freeDeliveryFrom)],
-    ["Delivery fee below that", money(storePolicy.deliveryFee)],
+    ["Shipping per order", storePolicy.deliveryFee === null ? "Not decided yet" : money(storePolicy.deliveryFee)],
+    ["Free shipping", "None"],
     ["Delivery time", storePolicy.deliveryTime],
     ["Size exchange window", `${storePolicy.exchangeDays} days after delivery`],
   ];
@@ -41,9 +41,9 @@ export default function Settings() {
             <Field label="Shop name" htmlFor="shop-name" error={error}>
               <input id="shop-name" className={inputClass} value={name} onChange={(event) => setName(event.target.value)} />
             </Field>
-            <Field label="Currency" htmlFor="currency" hint="Prices are shown as “Rs 14,990”.">
-              <select id="currency" className={inputClass} disabled defaultValue="PKR">
-                <option value="PKR">Pakistani rupee (PKR)</option>
+            <Field label="Currency" htmlFor="currency" hint="Prices are shown as “€149.90”.">
+              <select id="currency" className={inputClass} disabled defaultValue="EUR">
+                <option value="EUR">Euro (EUR)</option>
               </select>
             </Field>
           </div>
@@ -71,7 +71,7 @@ export default function Settings() {
                   <span className="block text-[14px] font-medium">{method.label}</span>
                   <span className="block text-[12px] text-taupe">{method.note}</span>
                 </span>
-                <Badge tone={method.id === "cod" ? "green" : "amber"}>{method.id === "cod" ? "Active" : "Preview"}</Badge>
+                <Badge tone="green">Active</Badge>
               </li>
             ))}
           </ul>

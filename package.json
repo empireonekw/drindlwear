@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed:admin": "node --env-file=.env.local scripts/seed-admin.mjs"
+    "seed:admin": "node --env-file=.env.local scripts/seed-admin.mjs",
+    "convert:eur": "node --env-file=.env.local scripts/convert-prices-to-eur.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

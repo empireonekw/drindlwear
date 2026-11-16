@@ -166,8 +166,15 @@ export function lineLimit(
   );
 }
 
-// Formats as "Rs 14,990". The "en-PK" currency format differs between Node
-// and browsers ("Rs 14,990.00" vs "Rs 14,990"), which broke hydration, so the
-// number is formatted with en-US grouping and the prefix is added by hand.
-const rupees = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
-export const money = (amount: number) => `Rs ${rupees.format(amount)}`;
+/** Prices are in euros with cents, e.g. 149.9. */
+const euros = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "EUR",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+/** Formats as "€149.90". */
+export const money = (amount: number) => euros.format(amount);
+
+/** Rounds to whole cents, so sums like 0.1 + 0.2 don't carry float noise. */
+export const roundMoney = (amount: number) => Math.round(amount * 100) / 100;

@@ -17,7 +17,7 @@ const brandValues = [
 
 export default function Story() {
   return (
-    <main className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px] motion-safe:[&>*]:animate-page-enter motion-safe:[&>:nth-child(2)]:[animation-delay:70ms] motion-safe:[&>:nth-child(3)]:[animation-delay:120ms]">
+    <main className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px] motion-safe:[&>*]:animate-page-enter motion-safe:[&>:nth-child(2)]:[animation-delay:30ms] motion-safe:[&>:nth-child(3)]:[animation-delay:60ms]">
       <section className="brand-story [display:grid] [grid-template-columns:1fr_1fr] [gap:45px] [align-items:center] [padding:75px_0] [&_img]:[max-width:360px] [&_img]:[width:100%] [&_img]:[margin:auto] [&_h1]:[font:500_52px_var(--font-serif)] [&_h1]:[color:#781d2d] [&_p]:[line-height:1.9] [&_p]:[color:#786565] max-[850px]:[grid-template-columns:1fr]">
         <img
           src="/brand/dirndl-wear-logo.png"

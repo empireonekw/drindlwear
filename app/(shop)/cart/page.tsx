@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useStore } from "@/components/store";
 import { CartItem, lineLimit, money, Product, requiresSize } from "@/lib/data";
 import { setDiscounts, totalSetDiscount } from "@/lib/sets";
-import { deliveryCharge, storePolicy } from "@/lib/store-policy";
+import { deliveryCharge, deliveryDecided, deliveryLabel } from "@/lib/store-policy";
 
 const primaryButton =
   "inline-flex w-full items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#5e1622] disabled:cursor-not-allowed disabled:bg-[#786565]";
@@ -25,8 +25,6 @@ export default function Cart() {
   const goods = subtotal - discount;
   const delivery = deliveryCharge(goods);
   const total = goods + delivery;
-  const toFreeDelivery = Math.max(0, storePolicy.freeDeliveryFrom - goods);
-  const freeProgress = Math.min(100, Math.round((goods / storePolicy.freeDeliveryFrom) * 100));
 
   const limit = (row: Row) => lineLimit(items, row.product, row);
   const missingSize = (row: Row) => requiresSize(row.product.category) && !row.size;
@@ -146,30 +144,6 @@ export default function Cart() {
 
           <aside className="h-max bg-[#fbf5f2] p-7">
             <h2 className="m-0 font-serif text-[26px] font-normal">Order summary</h2>
-            <div className="mt-4 bg-white p-4">
-              <p className="m-0 text-sm" aria-live="polite">
-                {toFreeDelivery > 0 ? (
-                  <>
-                    Add <strong>{money(toFreeDelivery)}</strong> more for free delivery.
-                  </>
-                ) : (
-                  <strong className="text-[#1f6b44]">You&apos;ve unlocked free delivery.</strong>
-                )}
-              </p>
-              <div
-                role="progressbar"
-                aria-label="Progress to free delivery"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={freeProgress}
-                className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eadfdb]"
-              >
-                <div
-                  className={`h-full rounded-full ${toFreeDelivery > 0 ? "bg-[#781d2d]" : "bg-[#1f6b44]"}`}
-                  style={{ width: `${freeProgress}%` }}
-                />
-              </div>
-            </div>
             <dl className="m-0 mt-4 text-sm">
               <div className="flex justify-between border-b border-[#eadfdc] py-4">
                 <dt>Subtotal</dt>
@@ -182,10 +156,8 @@ export default function Cart() {
                 </div>
               )}
               <div className="flex justify-between border-b border-[#eadfdc] py-4">
-                <dt>Delivery</dt>
-                <dd className={`m-0 ${delivery === 0 ? "font-semibold text-[#1f6b44]" : ""}`}>
-                  {delivery === 0 ? "Free" : money(delivery)}
-                </dd>
+                <dt>Shipping</dt>
+                <dd className={`m-0 ${deliveryDecided ? "" : "text-[#786565]"}`}>{deliveryLabel(delivery)}</dd>
               </div>
               <div className="flex justify-between py-4 text-base">
                 <dt className="font-semibold">Total</dt>

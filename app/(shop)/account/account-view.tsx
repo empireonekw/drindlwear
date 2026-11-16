@@ -3,11 +3,313 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, LayoutDashboard, LogOut, Mail, Phone, CalendarDays } from "lucide-react";
+import {
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  CreditCard,
+  Heart,
+  LayoutGrid,
+  LifeBuoy,
+  Loader2,
+  LogOut,
+  Mail,
+  MapPin,
+  Package,
+  Phone,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
+  UserRound,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 
-import { AuthUser, useStore } from "@/components/store";
-import { money } from "@/lib/data";
+import { AuthUser, Order, OrderStatus, useStore } from "@/components/store";
+import { money, roundMoney, type Product } from "@/lib/data";
 import { formatOrderId } from "@/lib/order";
+import { promiseText } from "@/lib/store-policy";
+
+type Tab = "overview" | "orders" | "profile";
+
+const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
+  { id: "overview", label: "Overview", icon: LayoutGrid },
+  { id: "orders", label: "My orders", icon: Package },
+  { id: "profile", label: "Personal details", icon: UserRound },
+];
+
+const statusStyle: Record<OrderStatus, string> = {
+  New: "bg-[#f6eeec] text-burgundy ring-[#ecd6d3]",
+  Processing: "bg-[#fdf3e2] text-[#8a5a12] ring-[#f1dfbd]",
+  Shipped: "bg-[#eaf0fb] text-[#2f4f8a] ring-[#d3dff3]",
+  Delivered: "bg-[#e8f4ec] text-[#1f6b44] ring-[#cde6d6]",
+  Cancelled: "bg-[#f1eeee] text-taupe ring-[#e3dddd]",
+};
+
+/** The steps an order moves through, for the progress line. */
+const steps: { status: OrderStatus; label: string; icon: LucideIcon }[] = [
+  { status: "New", label: "Order placed", icon: ShoppingBag },
+  { status: "Processing", label: "Being prepared", icon: Package },
+  { status: "Shipped", label: "On its way", icon: Truck },
+  { status: "Delivered", label: "Delivered", icon: Check },
+];
+
+// Fixed format and time zone so the server and browser render the same text.
+const longDate = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const monthYear = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+const shortMonthYear = new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+const formatDate = (value: string) => {
+  const date = new Date(value.length === 10 ? `${value}T00:00:00Z` : value);
+  return Number.isNaN(date.getTime()) ? value : longDate.format(date);
+};
+
+const cardClass = "rounded-2xl border border-[#eee3e0] bg-white shadow-[0_10px_30px_rgb(74_20_32_/_5%)]";
+const eyebrowClass = "m-0 text-[11px] font-semibold uppercase tracking-[2px] text-taupe";
+
+function StatusBadge({ status }: { status: OrderStatus }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset ${statusStyle[status]}`}>
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+      {status}
+    </span>
+  );
+}
+
+function itemCount(order: Order) {
+  return order.items.reduce((total, item) => total + item.qty, 0);
+}
+
+/** Progress line: placed → prepared → shipped → delivered. */
+function OrderProgress({ status }: { status: OrderStatus }) {
+  if (status === "Cancelled") {
+    return (
+      <p className="m-0 rounded-xl bg-[#f6f3f3] px-4 py-3 text-[13px] text-taupe">
+        This order was cancelled. If you were charged, the amount is refunded to your original payment method.
+      </p>
+    );
+  }
+  const current = steps.findIndex((step) => step.status === status);
+  return (
+    <ol className="m-0 grid list-none grid-cols-4 p-0" aria-label={`Order status: ${status}`}>
+      {steps.map((step, index) => {
+        const reached = index <= current;
+        const Icon = step.icon;
+        return (
+          <li key={step.status} className="relative flex flex-col items-center text-center">
+            {index > 0 && (
+              <span
+                aria-hidden="true"
+                className={`absolute right-1/2 top-[17px] h-[2px] w-full ${index <= current ? "bg-burgundy" : "bg-[#eadfdc]"}`}
+              />
+            )}
+            <span
+              className={`relative flex h-9 w-9 items-center justify-center rounded-full ring-4 ring-white ${
+                reached ? "bg-burgundy text-white" : "bg-[#f3ebe9] text-[#b9a7a7]"
+              }`}
+            >
+              <Icon size={16} aria-hidden="true" />
+            </span>
+            <span className={`mt-2 text-[12px] leading-tight ${reached ? "font-semibold text-charcoal" : "text-taupe"}`}>
+              {step.label}
+            </span>
+            {index === current && <span className="sr-only">(current step)</span>}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function OrderCard({ order, products, defaultOpen }: { order: Order; products: Product[]; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
+  const subtotal = order.subtotal ?? roundMoney(order.items.reduce((sum, item) => sum + item.price * item.qty, 0));
+  const thumbs = order.items
+    .map((item) => products.find((product) => product.id === item.productId)?.image)
+    .filter((image): image is string => Boolean(image))
+    .slice(0, 3);
+  const detailsId = `order-${order.id}`;
+
+  return (
+    <article className={cardClass + " overflow-hidden"}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls={detailsId}
+        className="flex w-full flex-wrap items-center gap-x-6 gap-y-4 px-5 py-5 text-left transition-colors hover:bg-[#fdfaf9] sm:px-6"
+      >
+        <span className="flex -space-x-3" aria-hidden="true">
+          {thumbs.length ? (
+            thumbs.map((image, index) => (
+              <img key={index} src={image} alt="" className="h-14 w-11 rounded-lg object-cover ring-2 ring-white" />
+            ))
+          ) : (
+            <span className="flex h-14 w-11 items-center justify-center rounded-lg bg-[#f6eeec] text-burgundy">
+              <Package size={18} />
+            </span>
+          )}
+        </span>
+        <span className="min-w-[140px] flex-1">
+          <span className="block font-serif text-[20px] leading-tight text-charcoal">Order {formatOrderId(order.id)}</span>
+          <span className="mt-0.5 block text-[13px] text-taupe">
+            Placed {formatDate(order.date)} · {itemCount(order)} {itemCount(order) === 1 ? "item" : "items"}
+          </span>
+        </span>
+        <StatusBadge status={order.status} />
+        <span className="text-right">
+          <span className="block text-[11px] uppercase tracking-[1.2px] text-taupe">Total</span>
+          <span className="block text-[16px] font-semibold text-charcoal [font-variant-numeric:tabular-nums]">{money(order.total)}</span>
+        </span>
+        <ChevronDown size={20} aria-hidden="true" className={`text-taupe transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div id={detailsId} className="border-t border-[#f0e6e3] px-5 pb-6 pt-6 sm:px-6">
+          <OrderProgress status={order.status} />
+
+          <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+            <div>
+              <h3 className={eyebrowClass}>Items</h3>
+              <ul className="m-0 mt-3 list-none divide-y divide-[#f0e6e3] p-0">
+                {order.items.map((item) => {
+                  const product = products.find((entry) => entry.id === item.productId);
+                  return (
+                    <li key={`${item.productId}-${item.size ?? ""}-${item.setName ?? ""}`} className="flex gap-4 py-4 first:pt-0">
+                      {product ? (
+                        <Link href={`/product/${product.id}`} className="flex-none">
+                          <img src={product.image} alt="" className="h-[84px] w-[66px] rounded-lg object-cover" />
+                        </Link>
+                      ) : (
+                        <span className="flex h-[84px] w-[66px] flex-none items-center justify-center rounded-lg bg-[#f6eeec] text-burgundy">
+                          <Package size={18} aria-hidden="true" />
+                        </span>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        {product ? (
+                          <Link href={`/product/${product.id}`} className="font-medium text-charcoal hover:text-burgundy">
+                            {item.name}
+                          </Link>
+                        ) : (
+                          <span className="font-medium text-charcoal">{item.name}</span>
+                        )}
+                        <p className="m-0 mt-1 text-[13px] text-taupe">
+                          {[product?.color, item.size && `Size ${item.size}`, `Qty ${item.qty}`].filter(Boolean).join(" · ")}
+                        </p>
+                        {item.setName && <p className="m-0 mt-1 text-[12px] text-[#1f6b44]">Part of {item.setName}</p>}
+                      </div>
+                      <div className="text-right">
+                        <p className="m-0 font-medium text-charcoal [font-variant-numeric:tabular-nums]">{money(item.price * item.qty)}</p>
+                        {item.qty > 1 && <p className="m-0 mt-1 text-[12px] text-taupe">{money(item.price)} each</p>}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className="grid content-start gap-4">
+              <section className="rounded-xl bg-[#fbf7f6] p-4">
+                <h3 className={eyebrowClass + " flex items-center gap-2"}>
+                  <MapPin size={14} aria-hidden="true" /> Shipping to
+                </h3>
+                <p className="m-0 mt-2 text-[14px] leading-relaxed text-charcoal">
+                  {order.customer}
+                  <br />
+                  {order.shippingAddress.street}
+                  <br />
+                  {order.shippingAddress.zip} {order.shippingAddress.city}
+                </p>
+                {order.customerPhone && <p className="m-0 mt-1 text-[13px] text-taupe">{order.customerPhone}</p>}
+              </section>
+
+              <section className="rounded-xl bg-[#fbf7f6] p-4">
+                <h3 className={eyebrowClass + " flex items-center gap-2"}>
+                  <CreditCard size={14} aria-hidden="true" /> Payment
+                </h3>
+                <p className="m-0 mt-2 text-[14px] text-charcoal">{order.paymentMethod ?? "—"}</p>
+                <p className="m-0 mt-0.5 text-[13px] text-taupe">{order.paymentStatus}</p>
+                <dl className="m-0 mt-4 grid grid-cols-[1fr_auto] gap-y-1.5 border-t border-[#efe4e1] pt-3 text-[14px]">
+                  <dt className="text-taupe">Subtotal</dt>
+                  <dd className="m-0 text-right [font-variant-numeric:tabular-nums]">{money(subtotal)}</dd>
+                  {order.discount ? (
+                    <>
+                      <dt className="text-[#1f6b44]">Set savings</dt>
+                      <dd className="m-0 text-right text-[#1f6b44] [font-variant-numeric:tabular-nums]">−{money(order.discount)}</dd>
+                    </>
+                  ) : null}
+                  <dt className="text-taupe">Shipping</dt>
+                  <dd className="m-0 text-right [font-variant-numeric:tabular-nums]">
+                    {order.deliveryFee === undefined ? "To be confirmed" : money(order.deliveryFee)}
+                  </dd>
+                  <dt className="pt-1.5 font-semibold text-charcoal">Total</dt>
+                  <dd className="m-0 pt-1.5 text-right font-semibold [font-variant-numeric:tabular-nums]">{money(order.total)}</dd>
+                </dl>
+              </section>
+
+              <Link
+                href="/pages/contact"
+                className="flex items-center justify-between rounded-xl border border-[#eadfdc] px-4 py-3 text-[14px] text-charcoal transition-colors hover:border-burgundy hover:text-burgundy"
+              >
+                <span className="flex items-center gap-2">
+                  <LifeBuoy size={16} aria-hidden="true" /> Need help with this order?
+                </span>
+                <ChevronRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}
+
+function EmptyOrders({ email }: { email: string }) {
+  return (
+    <div className={cardClass + " flex flex-col items-center px-6 py-14 text-center"}>
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f6eeec] text-burgundy">
+        <ShoppingBag size={24} aria-hidden="true" />
+      </span>
+      <h3 className="m-0 mt-5 font-serif text-[26px] font-normal text-charcoal">No orders yet</h3>
+      <p className="m-0 mt-2 max-w-[360px] text-[14px] leading-relaxed text-taupe">
+        When you place an order with {email}, you&apos;ll be able to follow it here, from checkout to your door.
+      </p>
+      <Link
+        href="/collections/all"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-burgundy px-6 py-3 text-[12px] font-semibold uppercase tracking-[1.5px] text-white transition-colors hover:bg-burgundy-dark"
+      >
+        Start shopping <ChevronRight size={15} aria-hidden="true" />
+      </Link>
+    </div>
+  );
+}
+
+function StatCard({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: string; hint?: string }) {
+  return (
+    <div className={cardClass + " p-5"}>
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f6eeec] text-burgundy">
+        <Icon size={19} aria-hidden="true" />
+      </span>
+      <p className="m-0 mt-4 text-[13px] text-taupe">{label}</p>
+      <p className="m-0 mt-1 text-[22px] font-semibold text-charcoal [font-variant-numeric:tabular-nums]">{value}</p>
+      {hint && <p className="m-0 mt-1 text-[12px] text-taupe">{hint}</p>}
+    </div>
+  );
+}
+
+function DetailRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-4 py-4">
+      <span className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[#f6eeec] text-burgundy">
+        <Icon size={16} aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <dt className="text-[12px] uppercase tracking-[1.2px] text-taupe">{label}</dt>
+        <dd className="m-0 mt-1 break-words text-[15px] text-charcoal">{value}</dd>
+      </div>
+    </div>
+  );
+}
 
 /**
  * The account page itself. page.tsx has already checked the session on the
@@ -15,8 +317,9 @@ import { formatOrderId } from "@/lib/order";
  */
 export function AccountView({ initialUser }: { initialUser: AuthUser }) {
   const router = useRouter();
-  const { user: storeUser, authReady, orders, signOut } = useStore();
+  const { user: storeUser, authReady, orders, products, wishlist, signOut } = useStore();
   const [signingOut, setSigningOut] = useState(false);
+  const [tab, setTab] = useState<Tab>("overview");
   // Until the store's own session check finishes, use the user the server found.
   const user = authReady ? storeUser : (storeUser ?? initialUser);
 
@@ -25,7 +328,23 @@ export function AccountView({ initialUser }: { initialUser: AuthUser }) {
     if (authReady && !storeUser && !signingOut) router.replace("/account/register");
   }, [authReady, storeUser, signingOut, router]);
 
+  // Open the tab named in the address (#orders, #profile), and keep it there.
+  useEffect(() => {
+    const fromHash = () => {
+      const hash = window.location.hash.slice(1);
+      if (tabs.some((entry) => entry.id === hash)) setTab(hash as Tab);
+    };
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    return () => window.removeEventListener("hashchange", fromHash);
+  }, []);
+
   if (!user) return null;
+
+  function openTab(next: Tab) {
+    setTab(next);
+    window.history.replaceState(null, "", next === "overview" ? window.location.pathname : `#${next}`);
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -34,136 +353,231 @@ export function AccountView({ initialUser }: { initialUser: AuthUser }) {
   }
 
   // Orders are still kept in this browser; show the ones placed with this email.
-  const myOrders = orders.filter(
-    (order) => order.customerEmail.trim().toLowerCase() === user.email,
+  const myOrders = orders.filter((order) => order.customerEmail.trim().toLowerCase() === user.email);
+  const activeOrders = myOrders.filter((order) => order.status !== "Delivered" && order.status !== "Cancelled");
+  const spent = roundMoney(
+    myOrders.filter((order) => order.status !== "Cancelled").reduce((total, order) => total + order.total, 0),
   );
+  const lastAddress = myOrders[0]?.shippingAddress;
+  const firstName = user.name.split(" ")[0] || user.name;
   const initials = user.name
     .split(" ")
     .map((part) => part[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
-  const memberSince = new Date(user.createdAt).toLocaleDateString("en-GB", {
-    month: "long",
-    year: "numeric",
-  });
+  const memberSince = monthYear.format(new Date(user.createdAt));
 
   return (
-    <div className="container [max-width:1360px] [margin:0_auto] [padding:0_32px] max-[520px]:[padding:0_17px]">
-      <h1 className="page-heading [text-align:center] [font:500_42px_var(--font-serif)] [margin:35px_0_14px] [color:#781d2d]">My Account</h1>
-        <section>
-          <div className="mx-auto mb-10 mt-8 flex max-w-[1100px] flex-wrap items-center gap-6 bg-white p-6 shadow-[0_12px_36px_rgb(74_20_32_/_8%)] sm:p-8">
-            <div
-              className="flex h-20 w-20 flex-none items-center justify-center rounded-full bg-[#781d2d] font-serif text-2xl tracking-wider text-white"
-              aria-hidden="true"
-            >
-              {initials}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-[2.5px] text-[#786565]">Welcome back</p>
-              <h2 className="truncate font-serif text-[28px] text-[#211c1d]">{user.name}</h2>
-              <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-[#786565]">
-                <span className="flex items-center gap-1.5">
-                  <Mail size={14} aria-hidden="true" /> {user.email}
-                </span>
-                {user.phone && (
-                  <span className="flex items-center gap-1.5">
-                    <Phone size={14} aria-hidden="true" /> {user.phone}
-                  </span>
-                )}
-                <span className="flex items-center gap-1.5">
-                  <CalendarDays size={14} aria-hidden="true" /> Member since {memberSince}
-                </span>
+    <div className="bg-[#fbf5f2]">
+      <div className="mx-auto max-w-[1240px] px-5 pb-24 pt-8 sm:px-8">
+        <nav aria-label="Breadcrumb" className="text-[13px] text-taupe">
+          <Link href="/" className="hover:text-burgundy">Home</Link>
+          <span aria-hidden="true" className="mx-2">/</span>
+          <span className="text-charcoal">My account</span>
+        </nav>
+
+        <header className="mt-4 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className={eyebrowClass}>My account</p>
+            <h1 className="m-0 mt-1 font-serif text-[clamp(34px,4vw,48px)] font-normal leading-tight text-charcoal">
+              Hello, {firstName}
+            </h1>
+            <p className="m-0 mt-1 text-[14px] text-taupe">Manage your orders and personal details in one place.</p>
+          </div>
+        </header>
+
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[270px_minmax(0,1fr)] lg:items-start">
+          {/* Sidebar: who's signed in, and the sections */}
+          <aside className={cardClass + " min-w-0 p-3 lg:sticky lg:top-28"}>
+            <div className="flex items-center gap-3 border-b border-[#f0e6e3] px-3 pb-4 pt-3">
+              <span
+                aria-hidden="true"
+                className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-burgundy font-serif text-[18px] tracking-wider text-white"
+              >
+                {initials}
+              </span>
+              <div className="min-w-0">
+                <p className="m-0 truncate font-medium text-charcoal">{user.name}</p>
+                <p className="m-0 truncate text-[13px] text-taupe">{user.email}</p>
               </div>
             </div>
-            {user.role === "admin" && (
-              <Link
-                href="/admin"
-                className="flex items-center gap-2 bg-[#781d2d] px-6 py-3 text-[11px] font-semibold uppercase tracking-[1.8px] text-white transition-colors hover:bg-[#5e1622]"
-              >
-                <LayoutDashboard size={15} aria-hidden="true" /> Admin dashboard
+            <nav aria-label="Account sections" className="mt-2 flex gap-1 overflow-x-auto lg:flex-col">
+              {tabs.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => openTab(id)}
+                  aria-current={tab === id ? "page" : undefined}
+                  className={`flex flex-none items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-[14px] transition-colors ${
+                    tab === id ? "bg-[#f6eeec] font-semibold text-burgundy" : "text-charcoal hover:bg-[#fbf7f6]"
+                  }`}
+                >
+                  <Icon size={17} aria-hidden="true" />
+                  <span className="flex-1">{label}</span>
+                  {id === "orders" && myOrders.length > 0 && (
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-burgundy ring-1 ring-[#ecd6d3]">
+                      {myOrders.length}
+                    </span>
+                  )}
+                </button>
+              ))}
+              <Link href="/wishlist" className="flex flex-none items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-[14px] text-charcoal transition-colors hover:bg-[#fbf7f6]">
+                <Heart size={17} aria-hidden="true" />
+                <span className="flex-1">Wishlist</span>
+                {wishlist.length > 0 && <span className="text-[12px] text-taupe">{wishlist.length}</span>}
               </Link>
-            )}
+              <Link href="/pages/contact" className="flex flex-none items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-[14px] text-charcoal transition-colors hover:bg-[#fbf7f6]">
+                <LifeBuoy size={17} aria-hidden="true" />
+                <span className="flex-1">Help &amp; contact</span>
+              </Link>
+            </nav>
             <button
               type="button"
               onClick={handleSignOut}
               disabled={signingOut}
-              className="flex items-center gap-2 border border-[#781d2d] px-6 py-3 text-[11px] font-semibold uppercase tracking-[1.8px] text-[#781d2d] transition-colors hover:bg-[#781d2d] hover:text-white disabled:opacity-60"
+              className="mt-2 flex w-full items-center gap-3 rounded-xl border-t border-[#f0e6e3] px-3 pb-2 pt-4 text-left text-[14px] text-taupe transition-colors hover:text-burgundy disabled:opacity-60"
             >
-              {signingOut ? <Loader2 size={15} className="animate-spin" /> : <LogOut size={15} />}
+              {signingOut ? <Loader2 size={17} className="animate-spin" aria-hidden="true" /> : <LogOut size={17} aria-hidden="true" />}
               {signingOut ? "Signing out…" : "Sign out"}
             </button>
-          </div>
-          <h2 className="page-heading [text-align:center] [font:500_42px_var(--font-serif)] [margin:35px_0_14px] [color:#781d2d]">My Orders</h2>
-          {myOrders.length === 0 ? (
-            <div className="empty [text-align:center] [padding:100px_0] [color:#786565]">
-              <p>You have not placed any orders yet.</p>
-              <p className="mt-2 text-sm">
-                Orders you place with {user.email} appear here.
-              </p>
-            </div>
-          ) : (
-            myOrders.map((order) => (
-              <article className="admin-card [background:white] [border:1px_solid_#eadfdc] [border-radius:8px] [padding:25px] [margin:25px_0] [overflow-x:auto] [min-width:0] motion-safe:[transition:transform_240ms_ease,_box-shadow_240ms_ease] motion-safe:[&:hover]:[transform:translateY(-3px)] motion-safe:[&:hover]:[box-shadow:0_12px_28px_rgb(33_28_29_/_8%)]" key={order.id}>
-                <div className="admin-head [display:flex] [justify-content:space-between] [align-items:center] [margin-bottom:30px] [&_h1]:[font:500_32px_var(--font-serif)] max-[520px]:[flex-wrap:wrap] max-[520px]:[gap:12px] max-[520px]:[&_h1]:[font-size:27px]">
-                  <div>
-                    <h3 className="font-serif text-xl">
-                      Order {formatOrderId(order.id)}
-                    </h3>
-                    <p>Placed {order.date}</p>
-                  </div>
-                  <div>
-                    <p><strong>{order.status}</strong></p>
-                    <p>{order.paymentStatus}</p>
-                  </div>
+          </aside>
+
+          <div className="min-w-0">
+            {tab === "overview" && (
+              <div className="grid gap-6">
+                <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+                  <StatCard icon={Package} label="Orders" value={String(myOrders.length)} hint={activeOrders.length ? `${activeOrders.length} in progress` : "None in progress"} />
+                  <StatCard icon={Wallet} label="Total spent" value={money(spent)} hint="Excludes cancelled orders" />
+                  <StatCard icon={Heart} label="Wishlist" value={String(wishlist.length)} hint={wishlist.length === 1 ? "Saved item" : "Saved items"} />
+                  <StatCard icon={CalendarDays} label="Member since" value={shortMonthYear.format(new Date(user.createdAt))} hint="Thank you for being with us" />
                 </div>
-                <table className="admin-table [width:100%] [border-collapse:collapse] [text-align:left] [font-size:13px] [&_th]:[padding:15px_12px] [&_th]:[border-bottom:1px_solid_#eadfdc] [&_td]:[padding:15px_12px] [&_td]:[border-bottom:1px_solid_#eadfdc] [&_th]:[color:#786565] [&_th]:[font-size:11px] [&_th]:[text-transform:uppercase] [&_th]:[letter-spacing:1px] [&_img]:[height:52px] [&_img]:[width:45px] [&_img]:[object-fit:cover] [&_button]:[color:#781d2d]">
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Quantity</th>
-                      <th>Price</th>
-                      <th>Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {order.items.map((item) => (
-                      <tr key={`${item.productId}-${item.size ?? ""}-${item.setName ?? ""}`}>
-                        <td>
-                          {item.name}
-                          {item.size ? ` (Size ${item.size})` : ""}
-                          {item.setName && (
-                            <span className="block text-xs text-[#786565]">Part of {item.setName}</span>
-                          )}
-                        </td>
-                        <td>{item.qty}</td>
-                        <td>{money(item.price)}</td>
-                        <td>{money(item.price * item.qty)}</td>
-                      </tr>
+
+                <section>
+                  <div className="mb-3 flex items-baseline justify-between gap-3">
+                    <h2 className="m-0 font-serif text-[26px] font-normal text-charcoal">Recent order</h2>
+                    {myOrders.length > 1 && (
+                      <button type="button" onClick={() => openTab("orders")} className="text-[13px] font-medium text-burgundy hover:underline">
+                        View all {myOrders.length} orders
+                      </button>
+                    )}
+                  </div>
+                  {myOrders[0] ? (
+                    <OrderCard order={myOrders[0]} products={products} defaultOpen />
+                  ) : (
+                    <EmptyOrders email={user.email} />
+                  )}
+                </section>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <section className={cardClass + " p-5"}>
+                    <div className="flex items-center justify-between">
+                      <h2 className="m-0 font-serif text-[22px] font-normal text-charcoal">Personal details</h2>
+                      <button type="button" onClick={() => openTab("profile")} className="text-[13px] font-medium text-burgundy hover:underline">
+                        View
+                      </button>
+                    </div>
+                    <p className="m-0 mt-3 text-[14px] text-charcoal">{user.name}</p>
+                    <p className="m-0 mt-1 text-[14px] text-taupe">{user.email}</p>
+                    {user.phone && <p className="m-0 mt-1 text-[14px] text-taupe">{user.phone}</p>}
+                  </section>
+                  <section className={cardClass + " p-5"}>
+                    <h2 className="m-0 font-serif text-[22px] font-normal text-charcoal">Shopping with us</h2>
+                    <ul className="m-0 mt-3 grid list-none gap-2 p-0 text-[14px] text-charcoal">
+                      <li className="flex items-center gap-2"><Truck size={16} className="text-burgundy" aria-hidden="true" /> {promiseText.deliveryTime}</li>
+                      <li className="flex items-center gap-2"><Package size={16} className="text-burgundy" aria-hidden="true" /> {promiseText.exchange}</li>
+                      <li className="flex items-center gap-2"><ShieldCheck size={16} className="text-burgundy" aria-hidden="true" /> Secure, private account</li>
+                    </ul>
+                  </section>
+                </div>
+              </div>
+            )}
+
+            {tab === "orders" && (
+              <section>
+                <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 className="m-0 font-serif text-[30px] font-normal text-charcoal">My orders</h2>
+                  {myOrders.length > 0 && (
+                    <p className="m-0 text-[13px] text-taupe">
+                      {myOrders.length} {myOrders.length === 1 ? "order" : "orders"} · {activeOrders.length} in progress
+                    </p>
+                  )}
+                </div>
+                {myOrders.length === 0 ? (
+                  <EmptyOrders email={user.email} />
+                ) : (
+                  <div className="grid gap-4">
+                    {myOrders.map((order, index) => (
+                      <OrderCard key={order.id} order={order} products={products} defaultOpen={index === 0} />
                     ))}
-                  </tbody>
-                </table>
-                <p className="mt-5">
-                  Phone: {order.customerPhone || "Not provided"}
-                </p>
-                <p className="mt-2">
-                  Shipping to: {order.shippingAddress.street},{" "}
-                  {order.shippingAddress.city}, {order.shippingAddress.zip}
-                </p>
-                {order.discount ? (
-                  <p className="mt-3 text-[#1f6b44]">Set savings: −{money(order.discount)}</p>
-                ) : null}
-                {order.deliveryFee !== undefined && (
-                  <p className="mt-2">
-                    Delivery: {order.deliveryFee === 0 ? "Free" : money(order.deliveryFee)}
-                  </p>
+                  </div>
                 )}
-                {order.paymentMethod && <p className="mt-2">Payment: {order.paymentMethod}</p>}
-                <p className="mt-3 font-bold">Order total: {money(order.total)}</p>
-              </article>
-            ))
-          )}
-        </section>
+              </section>
+            )}
+
+            {tab === "profile" && (
+              <div className="grid gap-6">
+                <section className={cardClass + " p-6"}>
+                  <h2 className="m-0 font-serif text-[30px] font-normal text-charcoal">Personal details</h2>
+                  <p className="m-0 mt-1 text-[14px] text-taupe">The details we use for your orders and messages.</p>
+                  <dl className="m-0 mt-4 grid divide-y divide-[#f0e6e3] sm:grid-cols-2 sm:divide-y-0 sm:[&>div]:border-b sm:[&>div]:border-[#f0e6e3]">
+                    <DetailRow icon={UserRound} label="Full name" value={user.name} />
+                    <DetailRow icon={Mail} label="Email address" value={user.email} />
+                    <DetailRow icon={Phone} label="Phone number" value={user.phone ?? <span className="text-taupe">Not added</span>} />
+                    <DetailRow icon={CalendarDays} label="Member since" value={memberSince} />
+                  </dl>
+                  <p className="m-0 mt-5 text-[13px] text-taupe">
+                    Need to change your name, email or phone number?{" "}
+                    <Link href="/pages/contact" className="font-medium text-burgundy hover:underline">Contact us</Link> and we&apos;ll update it for you.
+                  </p>
+                </section>
+
+                <section className={cardClass + " p-6"}>
+                  <h2 className="m-0 font-serif text-[24px] font-normal text-charcoal">Shipping address</h2>
+                  {lastAddress ? (
+                    <div className="mt-4 flex items-start gap-4 rounded-xl bg-[#fbf7f6] p-4">
+                      <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-white text-burgundy">
+                        <MapPin size={16} aria-hidden="true" />
+                      </span>
+                      <p className="m-0 text-[15px] leading-relaxed text-charcoal">
+                        {lastAddress.street}
+                        <br />
+                        {lastAddress.zip} {lastAddress.city}
+                        <span className="mt-1 block text-[12px] text-taupe">Used on your most recent order</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="m-0 mt-3 text-[14px] text-taupe">
+                      No address yet. The address from your first order will appear here.
+                    </p>
+                  )}
+                </section>
+
+                <section className={cardClass + " flex flex-wrap items-center justify-between gap-4 p-6"}>
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[#f6eeec] text-burgundy">
+                      <ShieldCheck size={16} aria-hidden="true" />
+                    </span>
+                    <div>
+                      <h2 className="m-0 text-[15px] font-semibold text-charcoal">Sign-in &amp; security</h2>
+                      <p className="m-0 mt-1 text-[13px] text-taupe">Your password is stored encrypted. Sign out on shared devices.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={signingOut}
+                    className="inline-flex items-center gap-2 rounded-full border border-burgundy px-5 py-2.5 text-[12px] font-semibold uppercase tracking-[1.2px] text-burgundy transition-colors hover:bg-burgundy hover:text-white disabled:opacity-60"
+                  >
+                    {signingOut ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : <LogOut size={15} aria-hidden="true" />}
+                    {signingOut ? "Signing out…" : "Sign out"}
+                  </button>
+                </section>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -186,7 +186,7 @@ export function ProductGrid({ items, columns = 4 }: { items: Product[]; columns?
       className={
         "product-grid grid gap-x-[18px] gap-y-[25px] max-[850px]:grid-cols-2 max-[520px]:gap-2.5 " +
         (columns === 3 ? "grid-cols-3 max-[1100px]:grid-cols-2" : "grid-cols-4") +
-        " motion-safe:[&_>_:nth-child(-n_+_8)]:[animation:page-enter_520ms_cubic-bezier(0.2,_0.7,_0.2,_1)_both] motion-safe:[&_>_:nth-child(2)]:[animation-delay:60ms] motion-safe:[&_>_:nth-child(3)]:[animation-delay:120ms] motion-safe:[&_>_:nth-child(4)]:[animation-delay:180ms] motion-safe:[&_>_:nth-child(n_+_5)]:[animation-delay:220ms]"
+        " motion-safe:[&_>_:nth-child(-n_+_8)]:[animation:page-enter_300ms_cubic-bezier(0.2,_0.7,_0.2,_1)_both] motion-safe:[&_>_:nth-child(2)]:[animation-delay:25ms] motion-safe:[&_>_:nth-child(3)]:[animation-delay:50ms] motion-safe:[&_>_:nth-child(4)]:[animation-delay:75ms] motion-safe:[&_>_:nth-child(n_+_5)]:[animation-delay:100ms]"
       }
     >
       {items.map((product) => (

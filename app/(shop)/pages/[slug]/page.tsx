@@ -1,10 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { money } from "@/lib/data";
 import { paymentMethods, promiseText, storePolicy } from "@/lib/store-policy";
 
-const free = money(storePolicy.freeDeliveryFrom);
-const fee = money(storePolicy.deliveryFee);
 const exchangeDays = storePolicy.exchangeDays;
 const paymentList = paymentMethods.map((method) => method.label).join(", ");
 
@@ -24,22 +21,21 @@ type InfoPage = {
 const infoPages: Record<string, InfoPage> = {
   "shipping & delivery": {
     title: "Shipping & Delivery",
-    intro: `We deliver across Pakistan. Orders of ${free} or more ship free; smaller orders pay a flat ${fee}.`,
+    intro: `We deliver across Germany. ${promiseText.shippingCost}.`,
     notice:
-      "Courier partners and dispatch cut-off times will be confirmed before the store opens for orders.",
+      "Shipping costs, courier partners and dispatch cut-off times will be confirmed before the store opens for orders.",
     sections: [
       {
         heading: "Delivery cost and time",
         bullets: [
-          `${promiseText.freeDelivery} (after any set savings).`,
-          `${fee} flat delivery fee on orders below ${free}.`,
+          `${promiseText.shippingCost}; you'll see the amount before you place your order.`,
           `${promiseText.deliveryTime} after your order is confirmed.`,
         ],
       },
       {
         heading: "Paying for your order",
         paragraphs: [
-          `You can pay by ${paymentList}. With Cash on Delivery, please have the amount ready when the courier arrives. Bank-transfer orders ship once the payment is confirmed.`,
+          `You pay by ${paymentList.toLowerCase()}. After you place your order, transfer the total to our bank account with your order number as the reference. Your order ships as soon as the payment arrives.`,
         ],
       },
       {
@@ -100,7 +96,7 @@ const infoPages: Record<string, InfoPage> = {
       {
         heading: "Where can I find delivery costs and timing?",
         paragraphs: [
-          `Delivery is free on orders of ${free} or more and ${fee} below that. Orders arrive in ${storePolicy.deliveryTime}. Your cart shows how much more you need for free delivery.`,
+          `${promiseText.shippingCost}. Orders arrive in ${storePolicy.deliveryTime} anywhere in Germany.`,
         ],
       },
       {

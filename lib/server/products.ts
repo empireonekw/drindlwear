@@ -59,6 +59,8 @@ function ensureReady(db: Db) {
         .catch((error) => {
           if (error?.code !== 11000) throw error;
         });
+      // The seed is already in euros: stop scripts/convert-prices-to-eur.mjs dividing it again.
+      await meta.updateOne({ _id: "prices-eur" }, { $setOnInsert: { at: now } }, { upsert: true });
     }
     await meta.updateOne({ _id: "catalog-seeded" }, { $setOnInsert: { at: new Date() } }, { upsert: true });
 
@@ -125,6 +127,12 @@ export async function deleteProduct(id: number) {
 const text = (value: unknown, max: number) => (typeof value === "string" ? value.trim().slice(0, max) : "");
 const wholeNumber = (value: unknown, min: number, max: number) =>
   typeof value === "number" && Number.isInteger(value) && value >= min && value <= max ? value : null;
+/** A euro amount with at most two decimals (cents). */
+const euroAmount = (value: unknown, min: number, max: number) => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max) return null;
+  const cents = Math.round(value * 100);
+  return Math.abs(value * 100 - cents) < 1e-6 ? cents / 100 : null;
+};
 /** Only photos served by this site: /images/… or uploads at /api/images/<id>. */
 const isPhoto = (value: unknown): value is string =>
   typeof value === "string" && (/^\/images\/[\w.-]+$/.test(value) || /^\/api\/images\/[a-f0-9]{24}$/i.test(value));
@@ -140,11 +148,11 @@ export function validateProduct(body: unknown): { product: Omit<Product, "id"> }
   const audience = text(raw.audience, 20) as Audience;
   if (!audiences.some((entry) => entry.value === audience)) return { error: "Choose who the product is for." };
 
-  const price = wholeNumber(raw.price, 1, 10_000_000);
-  if (price === null) return { error: "Enter a price above 0." };
+  const price = euroAmount(raw.price, 0.01, 100_000);
+  if (price === null) return { error: "Enter a price above €0 with at most two decimals." };
   let oldPrice: number | undefined;
   if (raw.oldPrice !== undefined && raw.oldPrice !== null) {
-    const value = wholeNumber(raw.oldPrice, 1, 10_000_000);
+    const value = euroAmount(raw.oldPrice, 0.01, 100_000);
     if (value === null || value <= price) return { error: "The original price must be higher than the selling price." };
     oldPrice = value;
   }

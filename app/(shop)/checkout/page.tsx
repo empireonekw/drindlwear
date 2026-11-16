@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Landmark } from "lucide-react";
 
 import { useStore } from "@/components/store";
 import { lineLimit, money, requiresSize } from "@/lib/data";
 import { setDiscounts, totalSetDiscount } from "@/lib/sets";
-import { deliveryCharge, PaymentMethodId, paymentMethods } from "@/lib/store-policy";
+import { deliveryCharge, deliveryDecided, deliveryLabel, PaymentMethodId, paymentMethods } from "@/lib/store-policy";
 
 const addressFields = [
   ["first", "First Name"],
@@ -28,7 +29,7 @@ export default function Checkout() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [payment, setPayment] = useState<PaymentMethodId>("cod");
+  const payment: PaymentMethodId = "bank";
   const [placed, setPlaced] = useState<{ id: string; total: number; method: string } | null>(null);
   const subtotal = items.reduce(
     (sum, item) =>
@@ -99,11 +100,9 @@ export default function Checkout() {
             </p>
           )}
           <p>
-            {payment === "cod"
-              ? "Please have the amount ready when the courier arrives."
-              : payment === "bank"
-                ? "We'll ship as soon as your bank transfer is confirmed."
-                : "UI preview: no payment has been taken."}
+            Please transfer the total to our bank account
+            {placed ? <> with <strong>{placed.id}</strong> as the reference</> : null}. We&apos;ll ship as soon as the
+            payment arrives.
           </p>
           <Link className="btn [display:inline-flex] [align-items:center] [justify-content:center] [background:#781d2d] [color:white] [padding:16px_27px] [font-size:11px] [letter-spacing:1.5px] [text-transform:uppercase] [transition:.2s] [&:hover]:[background:#5e1622] [&:focus-visible]:[outline:3px_solid_#d9b6b6] [&:focus-visible]:[outline-offset:3px] motion-safe:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&:hover]:[transform:translateY(-2px)]" href="/">
             BACK TO HOME
@@ -145,36 +144,22 @@ export default function Checkout() {
                       ? "street-address"
                       : undefined
                 }
-                placeholder={key === "phone" ? "+92 300 1234567" : undefined}
+                placeholder={key === "phone" ? "+49 151 23456789" : undefined}
               />
             </div>
           ))}
           <fieldset className="mt-6 border-0 p-0">
             <legend className="mb-2 font-serif text-2xl">Payment</legend>
-            <div className="grid gap-2">
-              {paymentMethods.map((method) => (
-                <label
-                  key={method.id}
-                  className={
-                    "!m-0 !flex cursor-pointer items-start gap-3 border bg-white p-4 " +
-                    (payment === method.id ? "border-[#781d2d] ring-1 ring-[#781d2d]" : "border-[#dcd0cd]")
-                  }
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value={method.id}
-                    checked={payment === method.id}
-                    onChange={() => setPayment(method.id)}
-                    className="!mt-0.5 !w-auto !border-0 !p-0 accent-[#781d2d]"
-                  />
-                  <span>
-                    <span className="block text-sm font-semibold">{method.label}</span>
-                    <span className="block text-[13px] text-[#786565]">{method.note}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
+            {/* Bank transfer is the only method, so it's shown as a fact, not a choice. */}
+            {paymentMethods.map((method) => (
+              <div key={method.id} className="flex items-start gap-3 border border-[#781d2d] bg-white p-4 ring-1 ring-[#781d2d]">
+                <Landmark size={20} className="mt-0.5 flex-none text-[#781d2d]" aria-hidden="true" />
+                <span>
+                  <span className="block text-sm font-semibold">{method.label}</span>
+                  <span className="block text-[13px] text-[#786565]">{method.note}</span>
+                </span>
+              </div>
+            ))}
           </fieldset>
           <dl className="mt-5 grid grid-cols-[1fr_auto] gap-y-1 text-sm">
             <dt>Subtotal</dt>
@@ -185,10 +170,8 @@ export default function Checkout() {
                 <dd className="m-0 text-right text-[#1f6b44]">−{money(discount)}</dd>
               </>
             )}
-            <dt>Delivery</dt>
-            <dd className={`m-0 text-right ${delivery === 0 ? "text-[#1f6b44]" : ""}`}>
-              {delivery === 0 ? "Free" : money(delivery)}
-            </dd>
+            <dt>Shipping</dt>
+            <dd className={`m-0 text-right ${deliveryDecided ? "" : "text-[#786565]"}`}>{deliveryLabel(delivery)}</dd>
             <dt className="pt-1 text-base font-bold">Total</dt>
             <dd className="m-0 pt-1 text-right text-base font-bold">{money(total)}</dd>
           </dl>

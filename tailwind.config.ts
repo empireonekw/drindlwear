@@ -24,7 +24,7 @@ export default {
       },
       keyframes: {
         "page-enter": {
-          from: { opacity: "0", transform: "translateY(14px)" },
+          from: { opacity: "0", transform: "translateY(6px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         "hero-enter": {
@@ -41,7 +41,7 @@ export default {
         },
       },
       animation: {
-        "page-enter": "page-enter 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both",
+        "page-enter": "page-enter 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both",
         "announce-in": "announce-in 420ms ease-out both",
       },
     },

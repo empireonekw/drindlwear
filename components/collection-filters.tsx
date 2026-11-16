@@ -209,10 +209,11 @@ function PriceRange({
       }}
     >
       <label className="grid gap-1 text-[12px] text-[#786565]">
-        From (Rs)
+        From (€)
         <input
           type="number"
-          inputMode="numeric"
+          inputMode="decimal"
+          step="any"
           min="0"
           value={from}
           placeholder={String(range.min)}
@@ -221,10 +222,11 @@ function PriceRange({
         />
       </label>
       <label className="grid gap-1 text-[12px] text-[#786565]">
-        To (Rs)
+        To (€)
         <input
           type="number"
-          inputMode="numeric"
+          inputMode="decimal"
+          step="any"
           min="0"
           value={to}
           placeholder={String(range.max)}

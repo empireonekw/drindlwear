@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Banknote, ChevronDown, Heart, Ruler, RotateCcw, Truck } from "lucide-react";
+import { ChevronDown, Heart, Landmark, Ruler, RotateCcw, Truck } from "lucide-react";
 
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductGrid } from "@/components/product";
 import { SizeGuide, SizeGuideHandle } from "@/components/size-guide";
+import { ProductSkeleton } from "@/components/skeletons";
 import { useStore } from "@/components/store";
 import {
   audiences,
@@ -20,7 +21,7 @@ import {
 } from "@/lib/data";
 import { completeTheLook, similarProducts } from "@/lib/recommendations";
 import { setPricing } from "@/lib/sets";
-import { promiseText, storePolicy } from "@/lib/store-policy";
+import { promiseText } from "@/lib/store-policy";
 
 const primaryButton =
   "inline-flex items-center justify-center bg-[#781d2d] px-7 py-4 text-[12px] font-medium uppercase tracking-[1.5px] text-white transition hover:bg-[#5e1622] disabled:cursor-not-allowed disabled:bg-[#786565]";
@@ -33,9 +34,7 @@ export default function ProductPage() {
   const { products, productsReady } = useStore();
   const product = products.find((item) => item.id === Number(id));
 
-  if (!product && !productsReady) {
-    return <div className="py-24 text-center text-[#786565]">Loading…</div>;
-  }
+  if (!product && !productsReady) return <ProductSkeleton />;
   if (!product) {
     return <div className="py-24 text-center text-[#786565]">Product not found.</div>;
   }
@@ -333,20 +332,13 @@ function ProductView({ product }: { product: Product }) {
           <ul className="m-0 mt-6 grid list-none gap-3 border-y border-[#eadfdc] p-0 py-5 text-sm">
             <li className="flex items-center gap-3">
               <Truck size={19} className="shrink-0 text-[#781d2d]" aria-hidden="true" />
-              <span>
-                {promiseText.deliveryTime} ·{" "}
-                {product.price >= storePolicy.freeDeliveryFrom ? (
-                  <strong className="text-[#1f6b44]">free delivery on this item</strong>
-                ) : (
-                  `free delivery over ${money(storePolicy.freeDeliveryFrom)}`
-                )}
-              </span>
+              <span>{promiseText.deliveryTime} across Germany</span>
             </li>
             <li className="flex items-center gap-3">
               <RotateCcw size={19} className="shrink-0 text-[#781d2d]" aria-hidden="true" /> {promiseText.exchange}
             </li>
             <li className="flex items-center gap-3">
-              <Banknote size={19} className="shrink-0 text-[#781d2d]" aria-hidden="true" /> {promiseText.cashOnDelivery}
+              <Landmark size={19} className="shrink-0 text-[#781d2d]" aria-hidden="true" /> {promiseText.bankTransfer}
             </li>
           </ul>
 
@@ -390,8 +382,8 @@ function ProductView({ product }: { product: Product }) {
                 <ChevronDown size={18} aria-hidden="true" className="text-[#786565] transition group-open:rotate-180" />
               </summary>
               <ul className="m-0 mt-3 list-disc pl-5 text-sm leading-7 text-[#786565]">
-                <li>{promiseText.deliveryTime} across Pakistan.</li>
-                <li>{promiseText.freeDelivery}; {promiseText.deliveryFee}.</li>
+                <li>{promiseText.deliveryTime} across Germany.</li>
+                <li>{promiseText.shippingCost}.</li>
                 <li>{promiseText.exchange}, counted from the day it arrives.</li>
               </ul>
               <p className="mb-0 mt-2 text-sm leading-7 text-[#786565]">

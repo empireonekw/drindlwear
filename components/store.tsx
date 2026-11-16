@@ -16,12 +16,13 @@ import {
   lineLimit,
   Product,
   requiresSize,
+  roundMoney,
   sameCartLine,
   sumSizeStock,
 } from "@/lib/data";
 import { placeholderSets } from "@/lib/placeholder-products";
 import { OutfitSet, setDiscounts, setPricing, totalSetDiscount } from "@/lib/sets";
-import { deliveryCharge, PaymentMethodId, paymentMethods } from "@/lib/store-policy";
+import { deliveryCharge, deliveryDecided, PaymentMethodId, paymentMethods } from "@/lib/store-policy";
 
 export type OrderStatus =
   | "New"
@@ -42,7 +43,7 @@ export type Order = {
   /** Set savings taken off the subtotal. */
   discount?: number;
   deliveryFee?: number;
-  /** Payment method label, e.g. "Cash on Delivery". */
+  /** Payment method label, e.g. "Bank transfer". */
   paymentMethod?: string;
   status: OrderStatus;
   paymentStatus: string;
@@ -109,6 +110,8 @@ type State = {
 
 const STORAGE_KEY = "dw-ui-preview";
 const DEFAULT_HEADLINE = "Traditional Dresses.";
+/** A short-lived default some browsers saved; treated as "never changed". */
+const DISCARDED_HEADLINE = "Pure Tradition";
 const DEFAULT_SHOP_NAME = "Dirndl Wear";
 
 const StoreContext = createContext<State | null>(null);
@@ -235,7 +238,7 @@ export function StoreProvider({
         if (Array.isArray(data.items)) setItems(data.items);
         if (Array.isArray(data.wishlist)) setWishlist(data.wishlist);
         if (Array.isArray(data.orders)) setOrders(data.orders);
-        if (typeof data.headline === "string") setHeadline(data.headline);
+        if (typeof data.headline === "string" && data.headline !== DISCARDED_HEADLINE) setHeadline(data.headline);
         if (typeof data.shopName === "string") setShopName(data.shopName);
       }
     } catch (error) {
@@ -393,15 +396,12 @@ export function StoreProvider({
         ...(setName ? { setName } : {}),
       };
     });
-    const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.qty, 0);
-    const discount = totalSetDiscount(setDiscounts(items, catalog, sets));
+    const subtotal = roundMoney(orderItems.reduce((sum, item) => sum + item.price * item.qty, 0));
+    const discount = roundMoney(totalSetDiscount(setDiscounts(items, catalog, sets)));
     const deliveryFee = deliveryCharge(subtotal - discount);
     const method = paymentMethods.find((entry) => entry.id === payment) ?? paymentMethods[0];
     const paymentStatus: Record<PaymentMethodId, string> = {
-      cod: "To be paid on delivery",
       bank: "Awaiting bank transfer",
-      wallet: "Not charged (preview)",
-      card: "Not charged (preview)",
     };
     const order: Order = {
       id: `DW-${String(orders.length + 1).padStart(6, "0")}`,
@@ -411,8 +411,9 @@ export function StoreProvider({
       date: new Date().toISOString().slice(0, 10),
       subtotal,
       ...(discount > 0 ? { discount } : {}),
-      deliveryFee,
-      total: subtotal - discount + deliveryFee,
+      // Left out while shipping costs are undecided, so the order doesn't claim "free".
+      ...(deliveryDecided ? { deliveryFee } : {}),
+      total: roundMoney(subtotal - discount + deliveryFee),
       paymentMethod: method.label,
       status: "New",
       paymentStatus: paymentStatus[method.id],

@@ -58,9 +58,13 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  /** Where to go once signed in. The admin has no shopper profile, so they go to the dashboard. */
+  const destination = (signedIn: AuthUser) => (signedIn.role === "admin" && next === "/account" ? "/admin" : next);
+
   // Already signed in: go straight on.
   useEffect(() => {
-    if (authReady && user) router.replace(next);
+    if (authReady && user) router.replace(destination(user));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authReady, user, next, router]);
 
   const set = (field: keyof typeof values) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,7 +131,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
       signIn(data.user);
       // Drop pages cached while signed out (e.g. the /admin redirect).
       router.refresh();
-      router.replace(next);
+      router.replace(destination(data.user));
     } catch {
       setFormError("We couldn't reach the server. Check your connection and try again.");
     } finally {

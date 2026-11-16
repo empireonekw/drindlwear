@@ -38,6 +38,7 @@ import {
   Product,
   productSizes,
   requiresSize,
+  roundMoney,
 } from "@/lib/data";
 
 /** Categories where a dress length makes sense. */
@@ -191,9 +192,9 @@ function Products() {
       name: form.name.trim(),
       category: form.category,
       audience: form.audience,
-      price: Math.round(Number(form.price)),
+      price: roundMoney(Number(form.price)),
       // Empty clears the sale price on an existing product.
-      oldPrice: form.oldPrice === "" ? (isNew ? undefined : null) : Math.round(Number(form.oldPrice)),
+      oldPrice: form.oldPrice === "" ? (isNew ? undefined : null) : roundMoney(Number(form.oldPrice)),
       stock: sizeStock ? sizeTotal : Math.max(0, Math.floor(Number(form.stock))),
       sizeStock,
       color: form.color.trim(),
@@ -426,11 +427,11 @@ function Products() {
 
           <Card title="Pricing">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Price (Rs)" htmlFor="p-price" error={errors.price}>
-                <input id="p-price" type="number" min="0" inputMode="numeric" className={inputClass} value={form.price} onChange={(event) => set("price", event.target.value)} placeholder="14990" />
+              <Field label="Price (€)" htmlFor="p-price" error={errors.price}>
+                <input id="p-price" type="number" min="0" step="0.01" inputMode="decimal" className={inputClass} value={form.price} onChange={(event) => set("price", event.target.value)} placeholder="149.90" />
               </Field>
-              <Field label="Original price (Rs)" htmlFor="p-old" error={errors.oldPrice} hint="Only for sale items. Leave empty if not on sale.">
-                <input id="p-old" type="number" min="0" inputMode="numeric" className={inputClass} value={form.oldPrice} onChange={(event) => set("oldPrice", event.target.value)} placeholder="Optional" />
+              <Field label="Original price (€)" htmlFor="p-old" error={errors.oldPrice} hint="Only for sale items. Leave empty if not on sale.">
+                <input id="p-old" type="number" min="0" step="0.01" inputMode="decimal" className={inputClass} value={form.oldPrice} onChange={(event) => set("oldPrice", event.target.value)} placeholder="Optional" />
               </Field>
             </div>
             {discount > 0 && (

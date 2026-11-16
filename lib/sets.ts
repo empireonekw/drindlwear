@@ -1,4 +1,4 @@
-import type { CartItem, Occasion, Product } from "./data";
+import { roundMoney, type CartItem, type Occasion, type Product } from "./data";
 
 /** A complete outfit sold together at a discount. */
 export type OutfitSet = {
@@ -16,7 +16,7 @@ export type SetPricing = {
   pieces: Product[];
   /** Combined price of the pieces bought separately. */
   full: number;
-  /** Set price, rounded to the nearest Rs 10. */
+  /** Set price, rounded to the nearest €0.10. */
   price: number;
   saving: number;
   /** False when any piece is missing or sold out. */
@@ -29,13 +29,13 @@ export function setPricing(set: OutfitSet, products: Product[]): SetPricing | nu
     .filter((product): product is Product => product !== undefined);
   if (pieces.length !== set.productIds.length) return null;
 
-  const full = pieces.reduce((total, piece) => total + piece.price, 0);
-  const price = Math.round((full * (1 - set.discountPercent / 100)) / 10) * 10;
+  const full = roundMoney(pieces.reduce((total, piece) => total + piece.price, 0));
+  const price = Math.round(full * (1 - set.discountPercent / 100) * 10) / 10;
   return {
     pieces,
     full,
     price,
-    saving: full - price,
+    saving: roundMoney(full - price),
     available: pieces.every((piece) => piece.stock > 0),
   };
 }

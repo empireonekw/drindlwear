@@ -14,7 +14,7 @@ import {
   X,
   ChevronDown,
   RotateCcw,
-  Banknote,
+  Landmark,
 } from "lucide-react";
 
 import { footerColumns, mainNav } from "@/lib/navigation";
@@ -149,9 +149,9 @@ export function Header() {
               <Search />
             </button>
             <Link
-              aria-label={user ? `Account: ${user.name}` : "Create an account"}
-              title={user ? user.name : "Create an account"}
-              href={user ? "/account" : "/account/register"}
+              aria-label={user ? (user.role === "admin" ? "Admin dashboard" : `Account: ${user.name}`) : "Create an account"}
+              title={user ? (user.role === "admin" ? "Admin dashboard" : user.name) : "Create an account"}
+              href={user ? (user.role === "admin" ? "/admin" : "/account") : "/account/register"}
             >
               <UserRound />
               {user && (
@@ -346,15 +346,15 @@ export function Header() {
           <div className="mobile-menu-benefits [display:none] max-[1359px]:[display:grid] max-[1359px]:[gap:16px] max-[1359px]:[margin-top:auto] max-[1359px]:[padding:22px_27px_max(22px,_env(safe-area-inset-bottom))] max-[1359px]:[background:#fbf5f2] max-[1359px]:[color:#211c1d] max-[1359px]:[&_>_div]:[display:flex] max-[1359px]:[&_>_div]:[align-items:center] max-[1359px]:[&_>_div]:[gap:14px] max-[1359px]:[&_>_div]:[font-size:13px] max-[1359px]:[&_>_div]:[letter-spacing:0.2px] max-[1359px]:[&_svg]:[flex:0_0_auto] max-[1359px]:[&_svg]:[color:#781d2d] max-[1359px]:[&_svg]:[stroke-width:1.6]" aria-label="Shopping benefits">
             <div>
               <Truck size={20} aria-hidden="true" />
-              <span>{promiseText.freeDelivery}</span>
+              <span>{promiseText.deliveryTime}</span>
             </div>
             <div>
               <RotateCcw size={20} aria-hidden="true" />
               <span>{promiseText.exchange}</span>
             </div>
             <div>
-              <Banknote size={20} aria-hidden="true" />
-              <span>{promiseText.cashOnDelivery}</span>
+              <Landmark size={20} aria-hidden="true" />
+              <span>{promiseText.bankTransfer}</span>
             </div>
           </div>
         </nav>
@@ -432,7 +432,6 @@ const footerLinkClass =
   "group inline-flex items-center gap-2 py-[5px] text-[14px] font-medium text-[#211c1d]/80 transition-colors duration-200 hover:text-[#781d2d] focus-visible:text-[#781d2d] focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4";
 
 export function Footer() {
-  const { user } = useStore();
   const year = new Date().getFullYear();
 
   return (
@@ -491,11 +490,6 @@ export function Footer() {
             <p className="m-0 text-[13.5px]">
               We accept {paymentMethods.map((method) => method.label).join(" · ")}
             </p>
-            {user?.role === "admin" && (
-              <Link href="/admin" className="text-[13.5px] text-[#781d2d] underline-offset-4 hover:underline">
-                Admin dashboard
-              </Link>
-            )}
           </div>
         </div>
       </div>

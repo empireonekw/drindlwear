@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 /** The three lines shown in the bar. */
-const promises = ["Free shipping", "Easy returns", "Quality since more than 50 years"];
+const promises = ["Delivery in 2–5 business days", "Easy returns", "Quality since more than 50 years"];
 
 /**
  * Bar above the header. Desktop shows all three promises with dividers;

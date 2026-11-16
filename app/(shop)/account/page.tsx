@@ -14,5 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function AccountPage() {
   const user = await getCurrentUser().catch(() => null);
   if (!user) redirect("/account/register");
+  // There is one admin and no shopper profile for them: send them to the dashboard.
+  if (user.role === "admin") redirect("/admin");
   return <AccountView initialUser={toPublicUser(user)} />;
 }
