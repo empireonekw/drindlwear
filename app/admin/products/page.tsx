@@ -45,6 +45,22 @@ import {
 const lengthCategories = ["Dirndl", "Kids"];
 type StockFilter = "all" | "in" | "low" | "out";
 
+/*
+ * Number fields in this form are plain text boxes, not type="number": a
+ * number box changes its value when the mouse wheel or arrow keys pass over
+ * it, which silently altered prices and stock. These keep only what was typed.
+ */
+
+/** A euro amount as typed: digits and one decimal point (a comma counts as one), up to cents. */
+const keepPrice = (value: string) => {
+  const [whole, ...decimals] = value.replace(/,/g, ".").replace(/[^\d.]/g, "").split(".");
+  return (decimals.length ? `${whole}.${decimals.join("").slice(0, 2)}` : whole).slice(0, 9);
+};
+/** A whole number as typed: digits only. */
+const keepWhole = (value: string) => value.replace(/\D/g, "").slice(0, 5);
+/** Shared settings for those text boxes. */
+const numberBox = { type: "text", autoComplete: "off", spellCheck: false } as const;
+
 type Form = {
   name: string;
   category: string;
@@ -171,8 +187,8 @@ function Products() {
     const found: Partial<Record<keyof Form, string>> = {};
     if (form.name.trim().length < 2) found.name = "Enter a product name.";
     if (!form.photos.length) found.photos = "Add at least one photo.";
-    if (form.price === "" || Number(form.price) <= 0) found.price = "Enter a price above 0.";
-    if (form.oldPrice !== "" && Number(form.oldPrice) <= Number(form.price)) {
+    if (!(Number(form.price) > 0)) found.price = "Enter a price above 0.";
+    if (form.oldPrice !== "" && !(Number(form.oldPrice) > Number(form.price))) {
       found.oldPrice = "The original price must be higher than the selling price.";
     }
     if (!sized && (form.stock === "" || Number(form.stock) < 0)) found.stock = "Enter how many are in stock.";
@@ -428,10 +444,10 @@ function Products() {
           <Card title="Pricing">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Price (€)" htmlFor="p-price" error={errors.price}>
-                <input id="p-price" type="number" min="0" step="0.01" inputMode="decimal" className={inputClass} value={form.price} onChange={(event) => set("price", event.target.value)} placeholder="149.90" />
+                <input id="p-price" {...numberBox} inputMode="decimal" className={inputClass} value={form.price} onChange={(event) => set("price", keepPrice(event.target.value))} placeholder="149.90" />
               </Field>
               <Field label="Original price (€)" htmlFor="p-old" error={errors.oldPrice} hint="Only for sale items. Leave empty if not on sale.">
-                <input id="p-old" type="number" min="0" step="0.01" inputMode="decimal" className={inputClass} value={form.oldPrice} onChange={(event) => set("oldPrice", event.target.value)} placeholder="Optional" />
+                <input id="p-old" {...numberBox} inputMode="decimal" className={inputClass} value={form.oldPrice} onChange={(event) => set("oldPrice", keepPrice(event.target.value))} placeholder="Optional" />
               </Field>
             </div>
             {discount > 0 && (
@@ -448,19 +464,18 @@ function Products() {
                   <Field key={size} label={`EU ${size}`} htmlFor={`p-size-${size}`}>
                     <input
                       id={`p-size-${size}`}
-                      type="number"
-                      min="0"
+                      {...numberBox}
                       inputMode="numeric"
                       className={inputClass + " text-center"}
                       value={form.sizeStock[size]}
-                      onChange={(event) => set("sizeStock", { ...form.sizeStock, [size]: event.target.value })}
+                      onChange={(event) => set("sizeStock", { ...form.sizeStock, [size]: keepWhole(event.target.value) })}
                     />
                   </Field>
                 ))}
               </div>
             ) : (
               <Field label="Units in stock" htmlFor="p-stock" error={errors.stock} className="max-w-[220px]">
-                <input id="p-stock" type="number" min="0" inputMode="numeric" className={inputClass} value={form.stock} onChange={(event) => set("stock", event.target.value)} />
+                <input id="p-stock" {...numberBox} inputMode="numeric" className={inputClass} value={form.stock} onChange={(event) => set("stock", keepWhole(event.target.value))} />
               </Field>
             )}
           </Card>
@@ -482,7 +497,7 @@ function Products() {
               </Field>
               {lengthCategories.includes(form.category) && (
                 <Field label="Dress length (cm)" htmlFor="p-length" hint="Short 50–55 · Midi 60–65 · Long 70+">
-                  <input id="p-length" type="number" min="0" className={inputClass} value={form.lengthCm} onChange={(event) => set("lengthCm", event.target.value)} />
+                  <input id="p-length" {...numberBox} inputMode="numeric" className={inputClass} value={form.lengthCm} onChange={(event) => set("lengthCm", keepWhole(event.target.value).slice(0, 3))} />
                 </Field>
               )}
               <Field label="Fit" htmlFor="p-fit">
