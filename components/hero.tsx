@@ -54,17 +54,17 @@ export function Hero({ headline }: { headline: string }) {
             Dirndl Wear · New collection
           </p>
 
-          <h1 className="m-0 mt-6 font-serif text-[clamp(44px,5.6vw,86px)] font-medium leading-[1.02] tracking-[-1px] text-charcoal [text-wrap:balance]">
+          <h1 className="m-0 mt-4 font-serif text-[clamp(44px,5.6vw,86px)] font-medium leading-[1.02] tracking-[-1px] text-charcoal [text-wrap:balance]">
             {headline}
             <span className="block italic text-burgundy">Timeless Elegance.</span>
           </h1>
 
-          <p className="m-0 mt-6 max-w-[470px] text-[16px] leading-[1.75] text-taupe">
+          <p className="m-0 mt-4 max-w-[470px] text-[16px] leading-[1.75] text-taupe">
             A modern expression of Alpine heritage: dirndls, blouses and lederhosen, crafted with care for life&apos;s
             special moments.
           </p>
 
-          <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
+          <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-4">
             <Link
               href="/collections/women"
               className="inline-flex min-h-[54px] items-center justify-center bg-burgundy px-8 text-[12px] font-semibold uppercase tracking-[1.8px] text-white shadow-[0_14px_30px_rgb(120_29_45_/_22%)] transition hover:-translate-y-0.5 hover:bg-burgundy-dark"
@@ -80,7 +80,7 @@ export function Hero({ headline }: { headline: string }) {
             </Link>
           </div>
 
-          <ul className="m-0 mt-12 flex list-none flex-wrap gap-x-6 gap-y-3 border-t border-[#eadfdc] p-0 pt-6 text-[13px] text-charcoal">
+          <ul className="m-0 mt-8 flex list-none flex-wrap gap-x-6 gap-y-3 border-t border-[#eadfdc] p-0 pt-5 text-[13px] text-charcoal">
             {promises.map(({ icon: Icon, text }) => (
               <li key={text} className="flex items-center gap-2">
                 <Icon size={17} strokeWidth={1.6} aria-hidden="true" className="text-burgundy" />
@@ -102,16 +102,6 @@ export function Hero({ headline }: { headline: string }) {
           </div>
 
           <QualitySeal />
-
-          <Link
-            href="/collections/occasion-festival"
-            className="absolute bottom-[14%] right-4 flex items-center gap-3 rounded-full bg-white/90 py-2 pl-4 pr-2 text-[13px] font-medium text-charcoal shadow-[0_12px_30px_rgb(33_28_29_/_12%)] backdrop-blur transition hover:bg-white sm:right-6"
-          >
-            Festival looks
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-burgundy text-white">
-              <ArrowRight size={15} aria-hidden="true" />
-            </span>
-          </Link>
         </div>
       </div>
     </section>
