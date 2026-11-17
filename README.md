@@ -75,6 +75,7 @@ The live site runs on the aaPanel server 13.140.168.178 as PM2 app `dirndlwear` 
 
 - First time: `git clone https://github.com/empireonekw/drindlwear.git /www/wwwroot/dirndlwear`, then `bash /www/wwwroot/dirndlwear/scripts/server/setup.sh`. It copies the database from Atlas, checks the copy, writes `.env.local`, builds, starts and configures nginx.
 - Updates: `cd /www/wwwroot/dirndlwear && bash scripts/deploy.sh` (builds beside the live site, swaps, health-checks `/api/health`, rolls back by itself).
+- Local development against the live database: put `DEV_DB_TUNNEL=root@13.140.168.178` in `.env.development.local` (git-ignored), run `npm run dev:key` once and paste the command it prints in the server terminal. After that `npm run dev` opens an SSH tunnel (local port 27021) and fetches the database login from the server by itself; no password is stored locally. This is the live data: changes made while developing show on dirndlwear.de. `npm run dev:next` runs Next.js without the tunnel.
 - Logs: `pm2 logs dirndlwear`. Database password: `/root/.mongodb-dirndlwear`. Nightly dumps: `/root/mongo-backup/`.
 
 ## Security
