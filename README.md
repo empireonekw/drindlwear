@@ -69,6 +69,14 @@ npm run build
 npm start
 ```
 
+### Server (dirndlwear.de)
+
+The live site runs on the aaPanel server 13.140.168.178 as PM2 app `dirndlwear` (127.0.0.1:4820) behind nginx and Cloudflare, with its database in the server's own MongoDB (127.0.0.1:27017, not reachable from the internet).
+
+- First time: `git clone https://github.com/empireonekw/drindlwear.git /www/wwwroot/dirndlwear`, then `bash /www/wwwroot/dirndlwear/scripts/server/setup.sh`. It copies the database from Atlas, checks the copy, writes `.env.local`, builds, starts and configures nginx.
+- Updates: `cd /www/wwwroot/dirndlwear && bash scripts/deploy.sh` (builds beside the live site, swaps, health-checks `/api/health`, rolls back by itself).
+- Logs: `pm2 logs dirndlwear`. Database password: `/root/.mongodb-dirndlwear`. Nightly dumps: `/root/mongo-backup/`.
+
 ## Security
 
 | Protection | Where |
