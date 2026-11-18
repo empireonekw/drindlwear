@@ -11,7 +11,7 @@ import { fingerprint } from "./security";
  * server instance counts its own traffic.
  */
 
-export type RouteGroup = "auth" | "uploads" | "images" | "products";
+export type RouteGroup = "auth" | "uploads" | "images" | "products" | "messages";
 
 type Sample = { at: number; ms: number; status: number };
 export type ServerError = { at: string; group: RouteGroup; status: number; message: string; path: string };
@@ -20,10 +20,11 @@ const KEEP_MS = 15 * 60 * 1000;
 const store = globalThis as unknown as {
   dwMetrics?: { samples: Record<RouteGroup, Sample[]>; errors: ServerError[]; startedAt: number };
 };
-store.dwMetrics ??= { samples: { auth: [], uploads: [], images: [], products: [] }, errors: [], startedAt: Date.now() };
+store.dwMetrics ??= { samples: { auth: [], uploads: [], images: [], products: [], messages: [] }, errors: [], startedAt: Date.now() };
 const metrics = store.dwMetrics;
 // A dev server that was running before a group was added keeps its old object.
 metrics.samples.products ??= [];
+metrics.samples.messages ??= [];
 
 export const serverStartedAt = () => metrics.startedAt;
 

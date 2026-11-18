@@ -1,4 +1,4 @@
-// `npm run dev`: starts `next dev`. When .env.development.local sets DEV_DB_TUNNEL, it first opens an SSH tunnel to
+// `npm run dev`: starts the dev server (server.mjs: Next.js plus live messages). When .env.development.local sets DEV_DB_TUNNEL, it first opens an SSH tunnel to
 // MongoDB on the server (and reopens it if it drops), asks the server for the database login through the same key and
 // hands it to Next.js, so no database password is ever stored on this computer. The tunnel closes with the dev server.
 // Without DEV_DB_TUNNEL this is plain `next dev` with .env.local.
@@ -105,8 +105,13 @@ if (target && !existsSync(key)) {
   }
 }
 
-const nextBin = path.join("node_modules", "next", "dist", "bin", "next");
-const server = spawn(process.execPath, [nextBin, "dev", ...process.argv.slice(2)], { stdio: "inherit", env: childEnv });
+// server.mjs runs Next.js together with the Socket.IO server for live messages.
+// The "ipc" channel lets server.mjs notice when this launcher is gone and stop too, so a
+// killed `npm run dev` never leaves an orphaned server holding the port and .next-dev.
+const server = spawn(process.execPath, ["server.mjs", ...process.argv.slice(2)], {
+  stdio: ["inherit", "inherit", "inherit", "ipc"],
+  env: { ...childEnv, NODE_ENV: "development" },
+});
 
 function stop() {
   stopping = true;

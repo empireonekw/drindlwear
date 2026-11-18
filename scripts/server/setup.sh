@@ -254,6 +254,22 @@ $CF_REALIP    real_ip_header CF-Connecting-IP;
 $PROXY
     }
 
+    # Live customer messages (Socket.IO, server.mjs): websocket upgrade, long-lived connections.
+    location /socket.io/ {
+        limit_req zone=${APP}_api burst=100 nodelay;
+        proxy_pass http://127.0.0.1:$PORT;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 1h;
+        proxy_send_timeout 1h;
+        proxy_buffering off;
+    }
+
     location /api/ {
         limit_req zone=${APP}_api burst=100 nodelay;
 $PROXY

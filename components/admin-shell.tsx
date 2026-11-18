@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquare,
   Package,
   Settings,
   ShoppingCart,
@@ -20,7 +21,31 @@ import {
 } from "lucide-react";
 
 import { ToastProvider } from "./admin/ui";
+import { useFallbackPolling, useLiveSocket, useSocketEvent } from "./live-socket";
 import { useStore } from "./store";
+import { SOCKET_EVENTS, type ConversationSummary } from "@/lib/messages";
+
+/** Customer messages waiting for the team, kept live for the sidebar badge. */
+function useUnreadMessages() {
+  const [unread, setUnread] = useState(0);
+  const { socket, connected } = useLiveSocket(true);
+  const load = useCallback(() => {
+    fetch("/api/admin/messages", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { conversations?: ConversationSummary[] } | null) => {
+        if (data?.conversations) setUnread(data.conversations.reduce((sum, entry) => sum + entry.unreadForAdmin, 0));
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(load, [load]);
+  useEffect(() => {
+    if (connected) load();
+  }, [connected, load]);
+  useSocketEvent(socket, SOCKET_EVENTS.message, load);
+  useSocketEvent(socket, SOCKET_EVENTS.conversation, load);
+  useFallbackPolling(true, connected, load, 30_000);
+  return unread;
+}
 
 type NavLink = { name: string; url: string; icon: LucideIcon; count?: number };
 
@@ -36,6 +61,7 @@ export function AdminShell({
   const router = useRouter();
   const { signOut, orders, products } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const unreadMessages = useUnreadMessages();
 
   const newOrders = orders.filter((order) => order.status === "New").length;
   const lowStock = products.filter((product) => product.stock <= 3).length;
@@ -53,6 +79,7 @@ export function AdminShell({
       title: "Sales",
       links: [
         { name: "Orders", url: "/admin/orders", icon: ShoppingCart, count: newOrders || undefined },
+        { name: "Messages", url: "/admin/messages", icon: MessageSquare, count: unreadMessages || undefined },
         { name: "Customers", url: "/admin/customers", icon: Users },
       ],
     },

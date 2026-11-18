@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { getAdmin, type UserDoc } from "@/lib/server/auth";
 import { getDb } from "@/lib/server/mongodb";
 import { jsonError, jsonOk, readJsonBody } from "@/lib/server/security";
+import { disconnectUser } from "@/lib/server/realtime";
 import { noteError, withMetrics } from "@/lib/server/metrics";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,9 @@ async function handlePOST(request: Request, { params }: { params: { id: string }
       .findOneAndUpdate({ _id: id }, { $set: { role } }, { returnDocument: "after", projection: { name: 1, role: 1 } });
     if (!result) return jsonError(404, "Account not found.");
 
+    // Live-message sockets carry the role they connected with: close them so the
+    // next connection gets the new access (a removed admin stops receiving the inbox).
+    disconnectUser(params.id);
     console.info(`Role change: ${admin.email} set account ${params.id} to ${role}.`);
     return jsonOk({ id: params.id, role: result.role });
   } catch (error) {

@@ -1,3 +1,4 @@
+import { OpenChatButton } from "@/components/chat-widget";
 import ContactForm from "@/components/contact-form";
 import { getI18n } from "@/lib/server/i18n";
 
@@ -34,6 +35,15 @@ export default function ContactPage() {
       </aside>
       <div className="contact-layout [display:grid] [grid-template-columns:minmax(0,_1.5fr)_minmax(280px,_1fr)] [gap:24px] [align-items:start] max-[850px]:[grid-template-columns:1fr]">
         <section className="contact-panel [padding:28px] [background:#fff] [border:1px_solid_#ead9d5] [&_h2]:[margin:0_0_10px] [&_h2]:[color:#781d2d] [&_h2]:[font:500_27px_var(--font-serif)] [&_>_p]:[color:#786565] [&_>_p]:[font-size:14px] [&_>_p]:[line-height:1.8] max-[580px]:[padding:21px]">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#f6eeec] px-5 py-4">
+            <div>
+              <p className="m-0 font-serif text-[22px] text-[#781d2d]">{t("Chat with us live")}</p>
+              <p className="m-0 mt-1 text-[14px] text-[#786565]">{t("The fastest way to reach our team. Replies appear right in the chat.")}</p>
+            </div>
+            <OpenChatButton className="rounded-full bg-[#781d2d] px-5 py-3 text-[12px] font-semibold uppercase tracking-[1.4px] text-white hover:bg-[#5e1622]">
+              {t("Open chat")}
+            </OpenChatButton>
+          </div>
           <h2>{t("Send us a message")}</h2>
           <p>
             {t("Fill in the form and choose the topic that best matches your question.")}
