@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 
 import type { Product } from "@/lib/data";
 import { measuringTips, sizeChartFor } from "@/lib/size-guide";
+import { useI18n } from "./i18n";
 
 export type SizeGuideHandle = { open: () => void };
 
@@ -17,6 +18,7 @@ export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
     const chart = sizeChartFor(product);
     const close = () => dialog.current?.close();
 
+    const { t } = useI18n();
     return (
       <dialog
         ref={dialog}
@@ -31,14 +33,14 @@ export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <h2 id={titleId} className="m-0 font-serif text-[28px] text-[#781d2d]">
-                Size guide
+                {t("Size guide")}
               </h2>
               <p className="m-0 mt-1 text-sm text-[#786565]">{product.name}</p>
             </div>
             <button
               type="button"
               onClick={close}
-              aria-label="Close size guide"
+              aria-label={t("Close size guide")}
               className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#e8ddda] hover:bg-[#f5eae8]"
             >
               <X size={20} aria-hidden="true" />
@@ -47,15 +49,15 @@ export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
 
           {product.fit && (
             <p className="mb-5 rounded-sm bg-[#f3e6e3] px-4 py-3 text-sm">
-              <strong>Fit:</strong> {product.fit}
-              {product.lengthCm ? ` · Length ${product.lengthCm} cm` : ""}
+              <strong>{t("Fit:")}</strong> {t(product.fit)}
+              {product.lengthCm ? ` · ${t("Length {cm} cm", { cm: product.lengthCm })}` : ""}
             </p>
           )}
 
           {chart ? (
             <>
               <h3 className="mb-2 mt-0 text-xs uppercase tracking-[1.6px] text-[#786565]">
-                {chart.title} · body measurements in cm
+                {t(chart.title)} · {t("body measurements in cm")}
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left text-sm">
@@ -63,7 +65,7 @@ export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
                     <tr>
                       {chart.columns.map((column) => (
                         <th key={column} scope="col" className="border-b border-[#e8ddda] px-3 py-2 font-semibold">
-                          {column}
+                          {t(column)}
                         </th>
                       ))}
                     </tr>
@@ -88,24 +90,23 @@ export const SizeGuide = forwardRef<SizeGuideHandle, { product: Product }>(
                 </table>
               </div>
               <p className="mt-2 text-xs text-[#786565]">
-                Between two sizes? Choose the larger one for a more relaxed bodice.
+                {t("Between two sizes? Choose the larger one for a more relaxed bodice.")}
               </p>
             </>
           ) : (
             <p className="text-sm">
-              A size chart for this item is coming soon. Contact us and we&apos;ll help you
-              choose a size.
+              {t("A size chart for this item is coming soon. Contact us and we'll help you choose a size.")}
             </p>
           )}
 
           <h3 className="mb-2 mt-6 text-xs uppercase tracking-[1.6px] text-[#786565]">
-            How to measure
+            {t("How to measure")}
           </h3>
           <dl className="m-0 grid gap-3 text-sm">
             {measuringTips.map((item) => (
               <div key={item.label}>
-                <dt className="font-semibold">{item.label}</dt>
-                <dd className="m-0 text-[#786565]">{item.tip}</dd>
+                <dt className="font-semibold">{t(item.label)}</dt>
+                <dd className="m-0 text-[#786565]">{t(item.tip)}</dd>
               </div>
             ))}
           </dl>

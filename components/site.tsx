@@ -21,6 +21,8 @@ import { footerColumns, mainNav } from "@/lib/navigation";
 import { paymentMethods, promiseText } from "@/lib/store-policy";
 import { AnnouncementBar } from "./announcement-bar";
 import { HeaderSearch } from "./header-search";
+import { useI18n } from "./i18n";
+import { LanguageSwitch } from "./language-switch";
 import { useStore } from "./store";
 
 const navItemClass =
@@ -48,6 +50,9 @@ export function Header() {
   /** Desktop: the menu opened by clicking its name (hover opens menus too). */
   const [clickOpen, setClickOpen] = useState<string | null>(null);
   const { items, wishlist, user } = useStore();
+  const i18n = useI18n();
+  const { t, locale } = i18n;
+  const promises = promiseText(i18n);
 
   function closeMenus() {
     setMenu(false);
@@ -110,7 +115,7 @@ export function Header() {
       <header className={menu ? "header menu-open [background:#fbf5f2] [position:sticky] [top:0] [z-index:40] [border-bottom:1px_solid_#eadfdc] min-[1360px]:[display:grid] min-[1360px]:[grid-template-columns:minmax(0,_1fr)_auto_minmax(0,_1fr)] min-[1360px]:[align-items:center] min-[1360px]:[column-gap:24px] min-[1360px]:[padding:0_clamp(40px,_4.5vw,_96px)] max-[1359px]:[&.menu-open]:[z-index:60]" : "header [background:#fbf5f2] [position:sticky] [top:0] [z-index:40] [border-bottom:1px_solid_#eadfdc] min-[1360px]:[display:grid] min-[1360px]:[grid-template-columns:minmax(0,_1fr)_auto_minmax(0,_1fr)] min-[1360px]:[align-items:center] min-[1360px]:[column-gap:24px] min-[1360px]:[padding:0_clamp(40px,_4.5vw,_96px)] max-[1359px]:[&.menu-open]:[z-index:60]"}>
         <div className="header-top min-[1360px]:[display:contents] [height:76px] [max-width:none] [margin:auto] [display:flex] [align-items:center] [justify-content:space-between] [padding:0_5%] max-[1359px]:[height:75px] max-[1359px]:[display:grid] max-[1359px]:[grid-template-columns:minmax(36px,_1fr)_auto_minmax(0,_1fr)] max-[1359px]:[gap:8px] max-[1359px]:[padding:0_16px] max-[1359px]:[&_>_.mobile]:[display:flex] max-[1359px]:[&_>_.mobile]:[align-items:center] max-[1359px]:[&_>_.mobile]:[justify-content:center] max-[1359px]:[&_>_.mobile]:[width:36px] max-[1359px]:[&_>_.mobile]:[height:40px] max-[1359px]:[&_>_.mobile]:[justify-self:start] max-[1359px]:[&_>_.logo]:[justify-self:center] max-[430px]:[grid-template-columns:minmax(32px,_1fr)_auto_minmax(0,_1fr)] max-[430px]:[gap:4px] max-[430px]:[padding:0_10px]">
           <button
-            aria-label={menu ? "Close menu" : "Open menu"}
+            aria-label={menu ? t("Close menu") : t("Open menu")}
             aria-expanded={menu}
             aria-controls="primary-navigation"
             onClick={() => setMenu(!menu)}
@@ -122,7 +127,7 @@ export function Header() {
             {/* Brand guide: wordmark in the navigation, monogram where space is small. */}
             <img
               src="/brand/dirndl-wear-wordmark.png"
-              alt="Dirndl Wear — Traditional Dresses"
+              alt={t("Dirndl Wear — Traditional Dresses")}
               width={250}
               height={46}
               className="brand-logo [width:clamp(190px,_15vw,_240px)] [height:auto] max-[599px]:[display:none]"
@@ -137,11 +142,12 @@ export function Header() {
           </Link>
           <div className="header-actions min-[1360px]:[grid-column:3] min-[1360px]:[grid-row:1] min-[1360px]:[justify-self:end] min-[1360px]:[&_svg]:[stroke-width:1.6] [display:flex] [gap:24px] [align-items:center] [&>a]:[position:relative] [&_small]:[position:absolute] [&_small]:[top:-8px] [&_small]:[right:-8px] [&_small]:[background:#eadfdc] [&_small]:[border-radius:50%] [&_small]:[font-size:10px] [&_small]:[padding:2px_5px] max-[1359px]:[gap:clamp(8px,_2vw,_14px)] max-[1359px]:[&_svg]:[width:19px] max-[520px]:[&_a[aria-label='Konto']]:[display:none] max-[1359px]:[justify-self:end] max-[1359px]:[&_a]:[display:flex] max-[1359px]:[&_a]:[flex:0_0_24px] max-[1359px]:[&_a]:[align-items:center] max-[1359px]:[&_a]:[justify-content:center] max-[1359px]:[&_a]:[height:40px] max-[1359px]:[&_button]:[display:flex] max-[1359px]:[&_button]:[flex:0_0_24px] max-[1359px]:[&_button]:[align-items:center] max-[1359px]:[&_button]:[justify-content:center] max-[1359px]:[&_button]:[height:40px] max-[430px]:[gap:5px] max-[430px]:[&_svg]:[width:18px] motion-safe:[&>a]:[transition:color_220ms_ease,_background-color_220ms_ease,_border-color_220ms_ease,_box-shadow_220ms_ease,_transform_220ms_ease] motion-safe:[&>a:hover]:[transform:scale(1.08)] motion-safe:[&>button:hover]:[transform:scale(1.08)]">
             {/* Wide screens: search field with live results. Smaller screens: icon + slide-down row. */}
+            <LanguageSwitch compact className="hidden min-[1360px]:block" />
             <HeaderSearch className="hidden min-[1360px]:block" />
             <button
               ref={searchButton}
               className="min-[1360px]:!hidden"
-              aria-label={search ? "Close search" : "Search"}
+              aria-label={search ? t("Close search") : t("Search")}
               aria-expanded={search}
               aria-controls="site-search"
               onClick={() => setSearch(!search)}
@@ -149,8 +155,8 @@ export function Header() {
               <Search />
             </button>
             <Link
-              aria-label={user ? (user.role === "admin" ? "Admin dashboard" : `Account: ${user.name}`) : "Create an account"}
-              title={user ? (user.role === "admin" ? "Admin dashboard" : user.name) : "Create an account"}
+              aria-label={user ? (user.role === "admin" ? t("Admin dashboard") : t("Account: {name}", { name: user.name })) : t("Create an account")}
+              title={user ? (user.role === "admin" ? t("Admin dashboard") : user.name) : t("Create an account")}
               href={user ? (user.role === "admin" ? "/admin" : "/account") : "/account/register"}
             >
               <UserRound />
@@ -161,11 +167,11 @@ export function Header() {
                 />
               )}
             </Link>
-            <Link aria-label="Wishlist" href="/wishlist">
+            <Link aria-label={t("Wishlist")} href="/wishlist">
               <Heart />
               <small>{wishlist.length}</small>
             </Link>
-            <Link aria-label="Cart" href="/cart">
+            <Link aria-label={t("Cart")} href="/cart">
               <ShoppingBag />
               <small>{cartCount}</small>
             </Link>
@@ -173,13 +179,13 @@ export function Header() {
         </div>
         <nav
           id="primary-navigation"
-          aria-label="Main navigation"
+          aria-label={t("Main navigation")}
           className={menu ? "nav open min-[1360px]:[grid-column:1] min-[1360px]:[grid-row:1] [display:flex] [justify-content:flex-start] [gap:clamp(18px,_1.6vw,_32px)] [height:80px] [align-items:center] max-[1359px]:[display:none] max-[1359px]:[position:fixed] max-[1359px]:[top:0] max-[1359px]:[left:0] max-[1359px]:[right:auto] max-[1359px]:[height:100dvh] max-[1359px]:[background:#fff] max-[1359px]:[padding:0_0_max(16px,_env(safe-area-inset-bottom))] max-[1359px]:[flex-direction:column] max-[1359px]:[align-items:stretch] max-[1359px]:[gap:0] max-[1359px]:[box-shadow:12px_0_36px_rgb(33_28_29_/_12%)] max-[1359px]:[&.open]:[display:flex] max-[1359px]:[z-index:62] max-[1359px]:[bottom:0] max-[1359px]:[width:min(90vw,_560px)] max-[1359px]:[max-height:none] max-[1359px]:[overflow-y:auto] max-[1359px]:[overscroll-behavior:contain] max-[1359px]:[justify-content:flex-start] max-[1359px]:[&_.dropdown]:[display:none]" : "nav min-[1360px]:[grid-column:1] min-[1360px]:[grid-row:1] [display:flex] [justify-content:flex-start] [gap:clamp(18px,_1.6vw,_32px)] [height:80px] [align-items:center] max-[1359px]:[display:none] max-[1359px]:[position:fixed] max-[1359px]:[top:0] max-[1359px]:[left:0] max-[1359px]:[right:auto] max-[1359px]:[height:100dvh] max-[1359px]:[background:#fff] max-[1359px]:[padding:0_0_max(16px,_env(safe-area-inset-bottom))] max-[1359px]:[flex-direction:column] max-[1359px]:[align-items:stretch] max-[1359px]:[gap:0] max-[1359px]:[box-shadow:12px_0_36px_rgb(33_28_29_/_12%)] max-[1359px]:[&.open]:[display:flex] max-[1359px]:[z-index:62] max-[1359px]:[bottom:0] max-[1359px]:[width:min(90vw,_560px)] max-[1359px]:[max-height:none] max-[1359px]:[overflow-y:auto] max-[1359px]:[overscroll-behavior:contain] max-[1359px]:[justify-content:flex-start] max-[1359px]:[&_.dropdown]:[display:none]"}
         >
           <div className="mobile-menu-header [display:none] max-[1359px]:[position:sticky] max-[1359px]:[top:0] max-[1359px]:[z-index:1] max-[1359px]:[isolation:isolate] max-[1359px]:[display:grid] max-[1359px]:[flex:0_0_76px] max-[1359px]:[grid-template-columns:36px_minmax(0,_1fr)] max-[1359px]:[align-items:center] max-[1359px]:[gap:8px] max-[1359px]:[padding:0_18px] max-[1359px]:[border-bottom:1px_solid_#eee8e5] max-[1359px]:[background:#fff] max-[1359px]:[&_>_button]:[position:relative] max-[1359px]:[&_>_button]:[display:flex] max-[1359px]:[&_>_button]:[width:36px] max-[1359px]:[&_>_button]:[height:40px] max-[1359px]:[&_>_button]:[align-items:center] max-[1359px]:[&_>_button]:[justify-content:center] max-[1359px]:[&_>_button]:[color:#211c1d] max-[1359px]:[&_svg]:[width:21px] max-[1359px]:[&_svg]:[height:21px] max-[1359px]:[&_svg]:[stroke-width:1.7] max-[430px]:[grid-template-columns:32px_minmax(0,_1fr)] max-[430px]:[gap:4px] max-[430px]:[padding:0_12px] max-[430px]:[&_>_button]:[width:32px]">
             <button
               type="button"
-              aria-label="Close menu"
+              aria-label={t("Close menu")}
               onClick={() => setMenu(false)}
             >
               <X />
@@ -215,7 +221,7 @@ export function Header() {
                         topLinkClass + linkColor + (item.columns ? " max-[1359px]:[display:none]" : "")
                       }
                     >
-                      {item.label}
+                      {t(item.label)}
                     </Link>
                   ) : (
                     // Desktop: a name with no page of its own opens its menu on click.
@@ -229,7 +235,7 @@ export function Header() {
                       }}
                       className={topLinkClass + linkColor + " [gap:6px] max-[1359px]:[display:none]"}
                     >
-                      {item.label}
+                      {t(item.label)}
                       <ChevronDown
                         size={14}
                         aria-hidden="true"
@@ -251,7 +257,7 @@ export function Header() {
                         onClick={() => setOpenSection(expanded ? null : item.label)}
                         className="[display:none] max-[1359px]:[display:flex] max-[1359px]:[width:100%] max-[1359px]:[min-height:64px] max-[1359px]:[align-items:center] max-[1359px]:[justify-content:space-between] max-[1359px]:[padding:16px_27px] max-[1359px]:[font-size:15px] max-[1359px]:[letter-spacing:1.5px] max-[1359px]:[text-transform:uppercase] max-[1359px]:[color:#211c1d]"
                       >
-                        {item.label}
+                        {t(item.label)}
                         <ChevronDown
                           size={18}
                           aria-hidden="true"
@@ -268,12 +274,12 @@ export function Header() {
                         >
                           {item.href && (
                             <Link href={item.href} onClick={closeMenus} className={megaLinkClass + " [font-weight:600]"}>
-                              Shop all {item.label.toLowerCase()}
+                              {t("Shop all {name}", { name: locale === "en" ? item.label.toLowerCase() : t(item.label) })}
                             </Link>
                           )}
                           {item.columns.map((column) => (
                             <div key={column.title}>
-                              <p className={columnTitleClass + " [margin:0_0_4px]"}>{column.title}</p>
+                              <p className={columnTitleClass + " [margin:0_0_4px]"}>{t(column.title)}</p>
                               {column.links.map((link) => (
                                 <Link
                                   key={link.href}
@@ -281,7 +287,7 @@ export function Header() {
                                   onClick={closeMenus}
                                   className={megaLinkClass + (link.highlight ? " [color:#781d2d] [font-weight:600]" : "")}
                                 >
-                                  {link.label}
+                                  {t(link.label)}
                                   {link.note && (
                                     <span className="[margin-left:8px] [font-size:12px] [color:#786565]">{link.note}</span>
                                   )}
@@ -303,7 +309,7 @@ export function Header() {
                         <div className="[max-width:1100px] [margin:0_auto] [padding:28px_32px_34px] [display:grid] [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] [gap:32px]">
                           {item.columns.map((column) => (
                             <div key={column.title}>
-                              <p className={columnTitleClass + " [margin:0_0_12px]"}>{column.title}</p>
+                              <p className={columnTitleClass + " [margin:0_0_12px]"}>{t(column.title)}</p>
                               {column.links.map((link) => (
                                 <Link
                                   key={link.href}
@@ -311,7 +317,7 @@ export function Header() {
                                   onClick={closeMenus}
                                   className={megaLinkClass + (link.highlight ? " [color:#781d2d] [font-weight:600]" : "")}
                                 >
-                                  {link.label}
+                                  {t(link.label)}
                                   {link.note && (
                                     <span className="[margin-left:8px] [font-size:12px] [color:#786565]">{link.note}</span>
                                   )}
@@ -331,7 +337,7 @@ export function Header() {
                                 className="[width:100%] [aspect-ratio:4/3] [object-fit:cover] [margin-bottom:10px]"
                               />
                               <span className="[font-size:13px] [letter-spacing:1.2px] [text-transform:uppercase]">
-                                {item.feature.title} →
+                                {t(item.feature.title)} →
                               </span>
                             </Link>
                           )}
@@ -343,18 +349,19 @@ export function Header() {
               );
             })}
           </div>
-          <div className="mobile-menu-benefits [display:none] max-[1359px]:[display:grid] max-[1359px]:[gap:16px] max-[1359px]:[margin-top:auto] max-[1359px]:[padding:22px_27px_max(22px,_env(safe-area-inset-bottom))] max-[1359px]:[background:#fbf5f2] max-[1359px]:[color:#211c1d] max-[1359px]:[&_>_div]:[display:flex] max-[1359px]:[&_>_div]:[align-items:center] max-[1359px]:[&_>_div]:[gap:14px] max-[1359px]:[&_>_div]:[font-size:13px] max-[1359px]:[&_>_div]:[letter-spacing:0.2px] max-[1359px]:[&_svg]:[flex:0_0_auto] max-[1359px]:[&_svg]:[color:#781d2d] max-[1359px]:[&_svg]:[stroke-width:1.6]" aria-label="Shopping benefits">
+          <LanguageSwitch className="[display:none] max-[1359px]:[display:flex] max-[1359px]:[padding:20px_27px] max-[1359px]:[border-bottom:1px_solid_#eee9e6]" />
+          <div className="mobile-menu-benefits [display:none] max-[1359px]:[display:grid] max-[1359px]:[gap:16px] max-[1359px]:[margin-top:auto] max-[1359px]:[padding:22px_27px_max(22px,_env(safe-area-inset-bottom))] max-[1359px]:[background:#fbf5f2] max-[1359px]:[color:#211c1d] max-[1359px]:[&_>_div]:[display:flex] max-[1359px]:[&_>_div]:[align-items:center] max-[1359px]:[&_>_div]:[gap:14px] max-[1359px]:[&_>_div]:[font-size:13px] max-[1359px]:[&_>_div]:[letter-spacing:0.2px] max-[1359px]:[&_svg]:[flex:0_0_auto] max-[1359px]:[&_svg]:[color:#781d2d] max-[1359px]:[&_svg]:[stroke-width:1.6]" aria-label={t("Shopping benefits")}>
             <div>
               <Truck size={20} aria-hidden="true" />
-              <span>{promiseText.deliveryTime}</span>
+              <span>{promises.deliveryTime}</span>
             </div>
             <div>
               <RotateCcw size={20} aria-hidden="true" />
-              <span>{promiseText.exchange}</span>
+              <span>{promises.exchange}</span>
             </div>
             <div>
               <Landmark size={20} aria-hidden="true" />
-              <span>{promiseText.bankTransfer}</span>
+              <span>{promises.bankTransfer}</span>
             </div>
           </div>
         </nav>
@@ -362,7 +369,7 @@ export function Header() {
           <button
             className="nav-backdrop [display:none] max-[1359px]:[position:fixed] max-[1359px]:[z-index:61] max-[1359px]:[inset:0] max-[1359px]:[display:block] max-[1359px]:[width:100%] max-[1359px]:[height:100%] max-[1359px]:[background:rgb(25_20_21_/_54%)] max-[1359px]:[animation:menu-backdrop-in_220ms_ease_both]"
             type="button"
-            aria-label="Close navigation menu"
+            aria-label={t("Close navigation menu")}
             onClick={() => setMenu(false)}
           />
         )}
@@ -395,7 +402,7 @@ export function Header() {
             >
               <Search size={21} strokeWidth={1.6} aria-hidden="true" className="flex-none text-[#211c1d]" />
               <label htmlFor="site-search-input" className="sr-only">
-                Search the store
+                {t("Search the store")}
               </label>
               <input
                 id="site-search-input"
@@ -403,7 +410,7 @@ export function Header() {
                 type="text"
                 enterKeyHint="search"
                 autoComplete="off"
-                placeholder="Search..."
+                placeholder={t("Search...")}
                 value={q}
                 onChange={(event) => setQ(event.target.value)}
                 onKeyDown={(event) => {
@@ -414,7 +421,7 @@ export function Header() {
               />
               <button
                 type="button"
-                aria-label="Close search"
+                aria-label={t("Close search")}
                 tabIndex={search ? 0 : -1}
                 onClick={closeSearch}
                 className="flex h-10 w-10 flex-none items-center justify-center rounded-full text-[#211c1d] transition-colors hover:bg-[#f6eeec] hover:text-[#781d2d]"
@@ -433,37 +440,38 @@ const footerLinkClass =
 
 export function Footer() {
   const year = new Date().getFullYear();
+  const { t } = useI18n();
 
   return (
     <footer className="relative overflow-hidden border-t border-[#eadfdc] bg-gradient-to-b from-[#fbf5f2] via-[#f9eeea] to-[#f4e1dc] text-[#211c1d]">
       <div className="mx-auto max-w-[1240px] px-6 pt-20 sm:px-10 lg:px-16">
         <nav
-          aria-label="Footer"
+          aria-label={t("Footer")}
           className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-4"
         >
           {footerColumns.map((column) => (
             <div key={column.title}>
-              <h2 className="mb-4 font-serif text-[16px] font-medium text-[#786565]">{column.title}</h2>
+              <h2 className="mb-4 font-serif text-[16px] font-medium text-[#786565]">{t(column.title)}</h2>
               <ul className="m-0 list-none p-0">
                 {column.links.map((link) => (
                   <li key={link.href}>
                     {link.external ? (
                       <a href={link.href} target="_blank" rel="noopener noreferrer" className={footerLinkClass}>
-                        {link.label}
+                        {t(link.label)}
                         <ArrowUpRight
                           size={15}
                           strokeWidth={1.8}
                           aria-hidden="true"
                           className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                         />
-                        <span className="sr-only">(opens in a new tab)</span>
+                        <span className="sr-only">{t("(opens in a new tab)")}</span>
                       </a>
                     ) : (
                       <Link href={link.href} className={footerLinkClass}>
-                        {link.label}
+                        {t(link.label)}
                         {link.badge && (
                           <span className="rounded-full border border-[#e3cfcb] bg-white px-2 py-[1px] text-[10.5px] font-medium text-[#781d2d]">
-                            {link.badge}
+                            {t(link.badge)}
                           </span>
                         )}
                       </Link>
@@ -476,7 +484,7 @@ export function Footer() {
         </nav>
 
         <div className="mt-16 flex flex-col gap-6 border-t border-[#ead8d4] pt-8 sm:flex-row sm:items-center sm:justify-between">
-          <Link href="/" aria-label="Dirndl Wear home" className="w-fit">
+          <Link href="/" aria-label={t("Dirndl Wear home")} className="w-fit">
             <img
               src="/brand/dirndl-wear-monogram.png"
               alt=""
@@ -486,9 +494,9 @@ export function Footer() {
             />
           </Link>
           <div className="flex flex-col gap-1.5 font-serif text-[15px] text-[#786565] sm:items-end">
-            <p className="m-0">© {year} Dirndl Wear. All rights reserved.</p>
+            <p className="m-0">{t("© {year} Dirndl Wear. All rights reserved.", { year })}</p>
             <p className="m-0 text-[13.5px]">
-              We accept {paymentMethods.map((method) => method.label).join(" · ")}
+              {t("We accept {methods}", { methods: paymentMethods.map((method) => t(method.label)).join(" · ") })}
             </p>
           </div>
         </div>

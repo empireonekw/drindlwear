@@ -90,7 +90,7 @@ const collections: Record<string, Collection> = {
 for (const length of dirndlLengths) {
   collections[`dirndl-${length.slug}`] = {
     title: `${length.label} dirndl`,
-    subtitle: length.range.toUpperCase(),
+    subtitle: length.range,
     matches: (product) =>
       isDirndl(product) &&
       product.lengthCm !== undefined &&
@@ -112,7 +112,7 @@ for (const family of colorFamilies) {
 for (const occasion of occasions) {
   collections[`occasion-${occasion.value}`] = {
     title: occasion.label,
-    subtitle: occasion.description.toUpperCase(),
+    subtitle: occasion.description,
     matches: (product) => product.occasions?.includes(occasion.value) ?? false,
   };
 }

@@ -189,7 +189,7 @@ export function facetOptions(products: Product[]) {
     colours: colorFamilies.filter((family) => has("colours", family.value)),
     lengths: dirndlLengths
       .filter((length) => has("lengths", length.slug))
-      .map((length) => ({ value: length.slug, label: `${length.label} · ${length.range}` })),
+      .map((length) => ({ value: length.slug, label: length.label, note: length.range })),
     occasions: occasions.filter((occasion) => has("occasions", occasion.value)),
     hasSale: products.some((product) => product.oldPrice !== undefined),
     priceRange: products.length

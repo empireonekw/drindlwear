@@ -24,6 +24,8 @@ import { placeholderSets } from "@/lib/placeholder-products";
 import { OutfitSet, setDiscounts, setPricing, totalSetDiscount } from "@/lib/sets";
 import { deliveryCharge, deliveryDecided, PaymentMethodId, paymentMethods } from "@/lib/store-policy";
 
+import { useI18n } from "./i18n";
+
 export type OrderStatus =
   | "New"
   | "Processing"
@@ -171,6 +173,8 @@ export function StoreProvider({
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [catalog, setCatalog] = useState<Product[]>(initialProducts ?? []);
   const [productsReady, setProductsReady] = useState(initialProducts !== null);
+  // Messages for shoppers (set and checkout errors) in the shop's language.
+  const { t } = useI18n();
   const sets = placeholderSets;
   const [orders, setOrders] = useState<Order[]>([]);
   const [headline, setHeadline] = useState(DEFAULT_HEADLINE);
@@ -282,17 +286,17 @@ export function StoreProvider({
   const addSet = (setId: string, sizes: Record<number, string | undefined>) => {
     const set = sets.find((entry) => entry.id === setId);
     const pricing = set && setPricing(set, catalog);
-    if (!set || !pricing) return "This set is no longer available.";
+    if (!set || !pricing) return t("This set is no longer available.");
 
     // Check every piece first so the set goes in whole or not at all.
     let next = items;
     for (const piece of pricing.pieces) {
       const size = requiresSize(piece.category) ? sizes[piece.id] : undefined;
-      if (requiresSize(piece.category) && !size) return `Choose a size for ${piece.name}.`;
+      if (requiresSize(piece.category) && !size) return t("Choose a size for {pieces}.", { pieces: piece.name });
       if (!fits(next, piece, size, 1, setId)) {
         return size
-          ? `${piece.name} is not available in size ${size}.`
-          : `${piece.name} is out of stock.`;
+          ? t("{name} is not available in size {size}.", { name: piece.name, size })
+          : t("{name} is out of stock.", { name: piece.name });
       }
       next = withLine(next, piece.id, 1, size, setId);
     }
@@ -364,13 +368,13 @@ export function StoreProvider({
   };
 
   const checkout = (customer: Record<string, string>, payment: PaymentMethodId) => {
-    if (!items.length) throw new Error("Your cart is empty.");
+    if (!items.length) throw new Error(t("Your cart is empty."));
 
     const lines = items.map((item) => {
       const product = catalog.find((entry) => entry.id === item.id);
-      if (!product) throw new Error("One or more products are no longer available.");
+      if (!product) throw new Error(t("One or more products are no longer available."));
       if (requiresSize(product.category) && !item.size) {
-        throw new Error(`Choose a size for ${product.name} before ordering.`);
+        throw new Error(t("Choose a size for {name} before ordering.", { name: product.name }));
       }
       return { item, product };
     });
@@ -379,8 +383,8 @@ export function StoreProvider({
       if (item.qty > available) {
         throw new Error(
           item.size
-            ? `Only ${available} ${product.name} left in size ${item.size}.`
-            : `Only ${available} ${product.name} left.`,
+            ? t("Only {count} × {name} left in size {size}.", { count: available, name: product.name, size: item.size })
+            : t("Only {count} × {name} left.", { count: available, name: product.name }),
         );
       }
     }

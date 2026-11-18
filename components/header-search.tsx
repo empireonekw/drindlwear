@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowRight, Search, X } from "lucide-react";
 
-import { money } from "@/lib/data";
 import { searchProducts } from "@/lib/search";
+
+import { useI18n } from "./i18n";
 import { useStore } from "./store";
 
 const MAX_RESULTS = 5;
@@ -18,6 +19,7 @@ const MAX_RESULTS = 5;
  */
 export function HeaderSearch({ className = "" }: { className?: string }) {
   const { products } = useStore();
+  const { t, money } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const listId = useId();
@@ -90,14 +92,14 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
           ref={input}
           type="text"
           role="combobox"
-          aria-label="Search the store"
+          aria-label={t("Search the store")}
           aria-expanded={showPanel}
           aria-controls={listId}
           aria-autocomplete="list"
           aria-activedescendant={showPanel && active >= 0 ? optionId(active) : undefined}
           autoComplete="off"
           enterKeyHint="search"
-          placeholder="Search dirndl, blouses…"
+          placeholder={t("Search dirndl, blouses…")}
           value={q}
           onChange={(event) => {
             setQ(event.target.value);
@@ -110,7 +112,7 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
         {q && (
           <button
             type="button"
-            aria-label="Clear search"
+            aria-label={t("Clear search")}
             onClick={() => {
               setQ("");
               input.current?.focus();
@@ -129,7 +131,7 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
           (showPanel ? "visible translate-y-0 opacity-100" : "invisible -translate-y-1 opacity-0")
         }
       >
-        <ul id={listId} role="listbox" aria-label="Matching products" className="m-0 list-none p-1.5">
+        <ul id={listId} role="listbox" aria-label={t("Matching products")} className="m-0 list-none p-1.5">
           {shown.map((product, index) => (
             <li key={product.id} id={optionId(index)} role="option" aria-selected={active === index}>
               <Link
@@ -149,8 +151,8 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14px] text-[#211c1d]">{product.name}</span>
                   <span className="block truncate text-[12px] text-[#786565]">
-                    {product.category} · {product.color}
-                    {product.stock <= 0 ? " · Sold out" : ""}
+                    {t(product.category)} · {t(product.color)}
+                    {product.stock <= 0 ? ` · ${t("Sold out")}` : ""}
                   </span>
                 </span>
                 <span className="flex-none text-right text-[13px] font-medium text-[#211c1d]">
@@ -164,7 +166,7 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
           ))}
           {term && !shown.length && (
             <li className="px-3 py-4 text-[14px] text-[#786565]" role="presentation">
-              No products match “{term}”. Try a colour, category or occasion.
+              {t("No products match “{term}”. Try a colour, category or occasion.", { term })}
             </li>
           )}
           {term && (
@@ -180,7 +182,7 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
                 }
               >
                 <span>
-                  See all results for “{term}”{results.length ? ` (${results.length})` : ""}
+                  {t("See all results for “{term}”", { term })}{results.length ? ` (${results.length})` : ""}
                 </span>
                 <ArrowRight size={15} aria-hidden="true" />
               </button>
