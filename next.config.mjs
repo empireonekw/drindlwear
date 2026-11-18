@@ -36,7 +36,9 @@ const securityHeaders = [
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   // scripts/deploy.sh builds into .next-build while the live site keeps serving .next.
-  distDir: isDev ? ".next-dev" : process.env.NEXT_DIST_DIR || ".next",
+  // NEXT_DIST_DIR also lets a second dev server use its own folder: two dev servers
+  // compiling into the same .next-dev break each other (React "Invalid hook call").
+  distDir: process.env.NEXT_DIST_DIR || (isDev ? ".next-dev" : ".next"),
   // Don't advertise the framework in an "X-Powered-By: Next.js" header.
   poweredByHeader: false,
   // Never ship source maps to browsers in production.

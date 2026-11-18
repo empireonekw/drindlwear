@@ -62,9 +62,12 @@ fi
 rm -rf .next-stray
 
 echo "==> Restarting"
-if pm2 describe "$APP" >/dev/null 2>&1; then
+# The app runs server.mjs (Next.js + live messages). An app still registered with the
+# old `next start` script is recreated once, since pm2 restart keeps the old script.
+if pm2 describe "$APP" 2>/dev/null | grep -q "server.mjs"; then
   pm2 restart "$APP" --update-env
 else
+  pm2 delete "$APP" >/dev/null 2>&1 || true
   pm2 start ecosystem.config.cjs
 fi
 pm2 save >/dev/null

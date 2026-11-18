@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { OpenChatButton } from "@/components/chat-widget";
 import { useI18n } from "@/components/i18n";
 import { AuthUser, Order, OrderStatus, useStore } from "@/components/store";
 import { roundMoney, type Product } from "@/lib/data";
@@ -434,6 +435,10 @@ export function AccountView({ initialUser }: { initialUser: AuthUser }) {
                 <span className="flex-1">{t("Wishlist")}</span>
                 {wishlist.length > 0 && <span className="text-[12px] text-taupe">{wishlist.length}</span>}
               </Link>
+              <OpenChatButton className="flex flex-none items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-[14px] text-charcoal transition-colors hover:bg-[#fbf7f6]">
+                <Mail size={17} aria-hidden="true" />
+                <span className="flex-1">{t("Messages")}</span>
+              </OpenChatButton>
               <Link href="/pages/contact" className="flex flex-none items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-[14px] text-charcoal transition-colors hover:bg-[#fbf7f6]">
                 <LifeBuoy size={17} aria-hidden="true" />
                 <span className="flex-1">{t("Help & contact")}</span>

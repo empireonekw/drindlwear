@@ -93,6 +93,11 @@ export default function Customers() {
   const [loadError, setLoadError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState("");
+  // ?q= (e.g. from the Messages inbox) fills in the search.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setQuery(q);
+  }, []);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [pending, setPending] = useState<RoleChange | null>(null);
   const [busy, setBusy] = useState(false);
