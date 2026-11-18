@@ -739,4 +739,22 @@ export const de: Record<string, string> = {
   "The fastest way to reach our team. Replies appear right in the chat.": "Der schnellste Weg zu unserem Team. Antworten erscheinen direkt im Chat.",
   "Open chat": "Chat öffnen",
   Messages: "Nachrichten",
+
+  // -- Homepage films ------------------------------------------------------------
+  "Dirndl Wear in motion": "Dirndl Wear in Bewegung",
+  "SEE OUR LOOKS COME ALIVE": "UNSERE LOOKS ZUM LEBEN ERWECKT",
+  "Couples' look · In motion": "Partnerlook · In Bewegung",
+  "From everyday to festival look": "Vom Alltag zum Wiesn-Look",
+  "A white shirt, leather lederhosen and our burgundy dirndl with a crisp white apron: watch a couple turn into a perfectly matched pair for the Wiesn in seconds.": "Weißes Hemd, echte Lederhose und unser bordeauxrotes Dirndl mit strahlend weißer Schürze: Sehen Sie, wie aus einem Paar in Sekunden ein perfekt abgestimmter Wiesn-Partnerlook wird.",
+  "Shop couples' looks": "Partnerlooks entdecken",
+  "A couple changes into a matching outfit: lederhosen with a white shirt and a burgundy dirndl": "Ein Paar zieht sich passende Tracht an: Lederhose mit weißem Hemd und ein bordeauxrotes Dirndl",
+  "Styling tip · The right blouse": "Styling-Tipp · Die richtige Bluse",
+  "One dirndl, many looks": "Ein Dirndl, viele Looks",
+  "The blouse changes everything. Romantic lace sleeves or an elegant high collar: see how our burgundy dirndl takes on a new character with every blouse.": "Die Bluse macht den Unterschied. Romantische Spitzenärmel oder ein eleganter Stehkragen: Sehen Sie, wie unser bordeauxrotes Dirndl mit jeder Bluse einen neuen Charakter bekommt.",
+  "Shop blouses": "Blusen entdecken",
+  "A woman presents the burgundy dirndl with different blouses": "Eine Frau zeigt das bordeauxrote Dirndl mit verschiedenen Blusen",
+  "Pause video": "Video pausieren",
+  "Play video": "Video abspielen",
+  "Turn sound on": "Ton einschalten",
+  "Turn sound off": "Ton ausschalten",
 };

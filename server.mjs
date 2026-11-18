@@ -123,6 +123,16 @@ httpServer.on("request", (req, res) => {
   if (req.url?.startsWith("/socket.io/")) return;
   handle(req, res);
 });
+// A busy port means another server is already running: say so plainly and stop,
+// instead of staying alive half-started.
+httpServer.once("error", (error) => {
+  if (error.code !== "EADDRINUSE") throw error;
+  console.error(
+    `\n✖ Port ${port} is already in use: another dev server is still running.\n` +
+      `  Stop it (close its terminal or press Ctrl+C there), or use another port:  npm run dev -- -p ${port + 1}\n`,
+  );
+  process.exit(1);
+});
 httpServer.listen(port, hostname, () => {
   console.log(`> Ready on http://${hostname}:${port} (${dev ? "development" : "production"}, live messages on)`);
 });
