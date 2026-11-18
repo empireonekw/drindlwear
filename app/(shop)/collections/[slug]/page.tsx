@@ -6,10 +6,11 @@ import { useParams, usePathname, useRouter, useSearchParams } from "next/navigat
 import { SlidersHorizontal, X } from "lucide-react";
 
 import { CollectionFilters } from "@/components/collection-filters";
+import { useI18n } from "@/components/i18n";
 import { ProductGrid } from "@/components/product";
 import { useStore } from "@/components/store";
 import { getCollection } from "@/lib/collections";
-import { colorFamilies, dirndlLengths, money, occasions } from "@/lib/data";
+import { colorFamilies, dirndlLengths, occasions } from "@/lib/data";
 import {
   activeFilterCount,
   applyFilters,
@@ -38,10 +39,12 @@ function Collection() {
   const pathname = usePathname();
   const router = useRouter();
   const { products } = useStore();
+  const { t, money } = useI18n();
   const drawer = useRef<HTMLDialogElement>(null);
 
   const collection = getCollection(slug);
-  const title = collection?.title ?? decodeURIComponent(slug).replace(/-/g, " ");
+  const title = t(collection?.title ?? decodeURIComponent(slug).replace(/-/g, " "));
+  const productCount = (n: number) => (n === 1 ? t("1 product") : t("{count} products", { count: n }));
 
   // Filters live in the URL so filtered pages can be shared and the back button works.
   const filters = useMemo(
@@ -66,33 +69,33 @@ function Collection() {
   // Removable chips for every active filter.
   const chips: { label: string; next: Filters }[] = [
     ...filters.categories.map((value) => ({
-      label: value,
+      label: t(value),
       next: { ...filters, categories: filters.categories.filter((entry) => entry !== value) },
     })),
     ...filters.sizes.map((value) => ({
-      label: `Size ${value}`,
+      label: t("Size {size}", { size: value }),
       next: { ...filters, sizes: filters.sizes.filter((entry) => entry !== value) },
     })),
     ...filters.colours.map((value) => ({
-      label: colorFamilies.find((family) => family.value === value)?.label ?? value,
+      label: t(colorFamilies.find((family) => family.value === value)?.label ?? value),
       next: { ...filters, colours: filters.colours.filter((entry) => entry !== value) },
     })),
     ...filters.lengths.map((value) => ({
-      label: `${dirndlLengths.find((length) => length.slug === value)?.label ?? value} length`,
+      label: t("{length} length", { length: t(dirndlLengths.find((length) => length.slug === value)?.label ?? value) }),
       next: { ...filters, lengths: filters.lengths.filter((entry) => entry !== value) },
     })),
     ...filters.occasions.map((value) => ({
-      label: occasions.find((occasion) => occasion.value === value)?.label ?? value,
+      label: t(occasions.find((occasion) => occasion.value === value)?.label ?? value),
       next: { ...filters, occasions: filters.occasions.filter((entry) => entry !== value) },
     })),
     ...(filters.minPrice !== undefined
-      ? [{ label: `From ${money(filters.minPrice)}`, next: { ...filters, minPrice: undefined } }]
+      ? [{ label: t("From {amount}", { amount: money(filters.minPrice) }), next: { ...filters, minPrice: undefined } }]
       : []),
     ...(filters.maxPrice !== undefined
-      ? [{ label: `Up to ${money(filters.maxPrice)}`, next: { ...filters, maxPrice: undefined } }]
+      ? [{ label: t("Up to {amount}", { amount: money(filters.maxPrice) }), next: { ...filters, maxPrice: undefined } }]
       : []),
-    ...(filters.inStock ? [{ label: "In stock", next: { ...filters, inStock: false } }] : []),
-    ...(filters.onSale ? [{ label: "On sale", next: { ...filters, onSale: false } }] : []),
+    ...(filters.inStock ? [{ label: t("In stock"), next: { ...filters, inStock: false } }] : []),
+    ...(filters.onSale ? [{ label: t("On sale"), next: { ...filters, onSale: false } }] : []),
   ];
   const clearAll = () => setFilters(emptyFilters(filters.sort));
 
@@ -102,9 +105,9 @@ function Collection() {
 
   return (
     <div className="mx-auto max-w-[1360px] px-8 pb-20 max-[520px]:px-4">
-      <nav aria-label="Breadcrumb" className="py-6 text-[12px] text-[#786565]">
+      <nav aria-label={t("Breadcrumb")} className="py-6 text-[12px] text-[#786565]">
         <ol className="m-0 flex list-none flex-wrap gap-2 p-0">
-          <li><Link href="/" className="hover:text-[#781d2d]">Home</Link></li>
+          <li><Link href="/" className="hover:text-[#781d2d]">{t("Home")}</Link></li>
           <li aria-hidden="true">/</li>
           <li aria-current="page" className="text-[#211c1d]">{title}</li>
         </ol>
@@ -112,8 +115,8 @@ function Collection() {
       <h1 className="m-0 mt-4 text-center font-serif text-[42px] font-normal text-[#781d2d] max-[520px]:text-[34px]">
         {title.charAt(0).toUpperCase() + title.slice(1)}
       </h1>
-      <p className="mb-10 mt-3 text-center text-[13px] tracking-[1px] text-[#786565]">
-        {collection?.subtitle ?? "FIND YOUR NEXT FAVORITE LOOK"}
+      <p className="mb-10 mt-3 text-center text-[13px] uppercase tracking-[1px] text-[#786565]">
+        {t(collection?.subtitle ?? "FIND YOUR NEXT FAVORITE LOOK")}
       </p>
 
       {/* Toolbar */}
@@ -125,14 +128,14 @@ function Collection() {
             className="hidden h-11 items-center gap-2 border border-[#cfc3bf] bg-white px-4 text-sm max-[850px]:inline-flex"
           >
             <SlidersHorizontal size={17} aria-hidden="true" />
-            Filters{activeCount > 0 ? ` (${activeCount})` : ""}
+            {t("Filters")}{activeCount > 0 ? ` (${activeCount})` : ""}
           </button>
           <p className="m-0 text-sm text-[#786565]" aria-live="polite">
-            {results.length} {results.length === 1 ? "product" : "products"}
+            {productCount(results.length)}
           </p>
         </div>
         <label className="flex items-center gap-2 text-sm">
-          <span className="text-[#786565] max-[420px]:sr-only">Sort by</span>
+          <span className="text-[#786565] max-[420px]:sr-only">{t("Sort by")}</span>
           <select
             value={filters.sort}
             onChange={(event) => setFilters({ ...filters, sort: event.target.value as SortValue })}
@@ -140,7 +143,7 @@ function Collection() {
           >
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {t(option.label)}
               </option>
             ))}
           </select>
@@ -149,13 +152,13 @@ function Collection() {
 
       {/* Active filters */}
       {chips.length > 0 && (
-        <ul className="m-0 mt-4 flex list-none flex-wrap items-center gap-2 p-0" aria-label="Active filters">
+        <ul className="m-0 mt-4 flex list-none flex-wrap items-center gap-2 p-0" aria-label={t("Active filters")}>
           {chips.map((chip) => (
             <li key={chip.label}>
               <button
                 type="button"
                 onClick={() => setFilters(chip.next)}
-                aria-label={`Remove filter: ${chip.label}`}
+                aria-label={t("Remove filter: {name}", { name: chip.label })}
                 className="inline-flex h-9 items-center gap-2 rounded-full bg-[#f3e6e3] px-4 text-[13px] hover:bg-[#ead6d2]"
               >
                 {chip.label}
@@ -165,14 +168,14 @@ function Collection() {
           ))}
           <li>
             <button type="button" onClick={clearAll} className="h-9 px-2 text-[13px] underline underline-offset-4">
-              Clear all
+              {t("Clear all")}
             </button>
           </li>
         </ul>
       )}
 
       <div className="mt-6 grid grid-cols-[240px_minmax(0,1fr)] gap-10 max-[850px]:grid-cols-1">
-        <aside aria-label="Filters" className="max-[850px]:hidden">
+        <aside aria-label={t("Filters")} className="max-[850px]:hidden">
           {panel}
         </aside>
 
@@ -182,7 +185,7 @@ function Collection() {
           ) : (
             <div className="py-24 text-center">
               <p className="m-0 text-[#786565]">
-                {inCollection.length ? "No products match these filters." : "No products found."}
+                {inCollection.length ? t("No products match these filters.") : t("No products found.")}
               </p>
               {activeCount > 0 && (
                 <button
@@ -190,7 +193,7 @@ function Collection() {
                   onClick={clearAll}
                   className="mt-5 border border-[#211c1d] px-6 py-3 text-[12px] uppercase tracking-[1.4px] hover:bg-[#211c1d] hover:text-white"
                 >
-                  Clear filters
+                  {t("Clear filters")}
                 </button>
               )}
             </div>
@@ -201,7 +204,7 @@ function Collection() {
       {/* Mobile filter drawer */}
       <dialog
         ref={drawer}
-        aria-label="Filters"
+        aria-label={t("Filters")}
         onClick={(event) => {
           if (event.target === drawer.current) drawer.current?.close();
         }}
@@ -209,11 +212,11 @@ function Collection() {
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-[#eadfdc] px-5 py-3">
-            <h2 className="m-0 font-serif text-[24px] font-normal">Filters</h2>
+            <h2 className="m-0 font-serif text-[24px] font-normal">{t("Filters")}</h2>
             <button
               type="button"
               onClick={() => drawer.current?.close()}
-              aria-label="Close filters"
+              aria-label={t("Close filters")}
               className="grid h-11 w-11 place-items-center"
             >
               <X size={22} aria-hidden="true" />
@@ -227,14 +230,14 @@ function Collection() {
               disabled={activeCount === 0}
               className="h-12 px-4 text-sm underline underline-offset-4 disabled:text-[#b5a9a9] disabled:no-underline"
             >
-              Clear all
+              {t("Clear all")}
             </button>
             <button
               type="button"
               onClick={() => drawer.current?.close()}
               className="h-12 bg-[#781d2d] text-[12px] font-medium uppercase tracking-[1.5px] text-white hover:bg-[#5e1622]"
             >
-              Show {results.length} {results.length === 1 ? "product" : "products"}
+              {t("Show {products}", { products: productCount(results.length) })}
             </button>
           </div>
         </div>

@@ -3,8 +3,10 @@ import "./globals.css";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 
+import { I18nProvider } from "@/components/i18n";
 import { StoreProvider } from "@/components/store";
 import type { Product } from "@/lib/data";
+import { getI18n, getLocale } from "@/lib/server/i18n";
 import { listProducts } from "@/lib/server/products";
 
 /**
@@ -21,12 +23,15 @@ const serif = Cormorant_Garamond({
 });
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 
-export const metadata: Metadata = {
-  title: "Dirndl Wear | Traditional Dresses",
-  description:
-    "Premium traditional Bavarian and Alpine fashion. Traditional Dresses. Timeless Elegance.",
-  // Favicon and Apple icon come from app/icon.png and app/apple-icon.png (the DW emblem).
-};
+/** Title and description in the visitor's language (German unless they chose English). */
+export function generateMetadata(): Metadata {
+  const { t } = getI18n();
+  return {
+    title: t("Dirndl Wear | Traditional Dresses"),
+    description: t("Premium traditional Bavarian and Alpine fashion. Traditional Dresses. Timeless Elegance."),
+    // Favicon and Apple icon come from app/icon.png and app/apple-icon.png (the DW emblem).
+  };
+}
 
 export const viewport: Viewport = { themeColor: "#781d2d" };
 
@@ -46,13 +51,17 @@ export default async function RootLayout({
     console.error("Could not load products for the page:", error instanceof Error ? error.message : error);
   }
 
+  const locale = getLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${serif.variable} ${sans.variable} motion-safe:scroll-smooth max-[850px]:overflow-x-clip [&_a:focus-visible]:[outline:2px_solid_#781d2d] [&_a:focus-visible]:[outline-offset:3px] [&_button:focus-visible]:[outline:2px_solid_#781d2d] [&_button:focus-visible]:[outline-offset:3px] [&_input:focus-visible]:[outline:2px_solid_#781d2d] [&_input:focus-visible]:[outline-offset:3px]`}
     >
       <body>
-        <StoreProvider initialProducts={products}>{children}</StoreProvider>
+        <I18nProvider locale={locale}>
+          <StoreProvider initialProducts={products}>{children}</StoreProvider>
+        </I18nProvider>
       </body>
     </html>
   );

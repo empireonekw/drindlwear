@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-import { colorSwatches, ColorFamily, money } from "@/lib/data";
+import { colorSwatches, ColorFamily } from "@/lib/data";
 import { facetOptions, Filters, ListFacet } from "@/lib/filters";
+
+import { useI18n } from "./i18n";
 
 type Options = ReturnType<typeof facetOptions>;
 type Count = (facet: ListFacet, value: string) => number;
@@ -43,6 +45,7 @@ export function CollectionFilters({
   count: Count;
   onChange: (next: Filters) => void;
 }) {
+  const { t } = useI18n();
   const toggle = (facet: ListFacet, value: string) => {
     const current = filters[facet] as string[];
     const next = current.includes(value)
@@ -51,7 +54,7 @@ export function CollectionFilters({
     onChange({ ...filters, [facet]: next });
   };
 
-  const checkList = (facet: ListFacet, items: { value: string; label: string }[], swatch = false) => (
+  const checkList = (facet: ListFacet, items: { value: string; label: string; note?: string }[], swatch = false) => (
     <ul className="m-0 list-none p-0">
       {items.map((item) => {
         const selected = (filters[facet] as string[]).includes(item.value);
@@ -73,7 +76,10 @@ export function CollectionFilters({
                   style={{ background: colorSwatches[item.value as ColorFamily] }}
                 />
               )}
-              <span className="flex-1">{item.label}</span>
+              <span className="flex-1">
+                {t(item.label)}
+                {item.note && <span className="text-[#786565]"> · {item.note}</span>}
+              </span>
               <span className="text-[12px] text-[#786565]">{n}</span>
             </label>
           </li>
@@ -85,13 +91,13 @@ export function CollectionFilters({
   return (
     <div>
       {options.categories.length > 1 && (
-        <Group title="Category" active={filters.categories.length}>
+        <Group title={t("Category")} active={filters.categories.length}>
           {checkList("categories", options.categories)}
         </Group>
       )}
 
       {options.sizes.length > 0 && (
-        <Group title="Size (EU)" active={filters.sizes.length}>
+        <Group title={t("Size (EU)")} active={filters.sizes.length}>
           <div className="grid grid-cols-4 gap-2">
             {options.sizes.map(({ value }) => {
               const selected = filters.sizes.includes(value);
@@ -101,7 +107,7 @@ export function CollectionFilters({
                   key={value}
                   type="button"
                   aria-pressed={selected}
-                  aria-label={`Size ${value}, ${n} products`}
+                  aria-label={t("Size {size}, {count} products", { size: value, count: n })}
                   disabled={!selected && n === 0}
                   onClick={() => toggle("sizes", value)}
                   className={
@@ -120,26 +126,26 @@ export function CollectionFilters({
       )}
 
       {options.colours.length > 0 && (
-        <Group title="Colour" active={filters.colours.length}>
+        <Group title={t("Colour")} active={filters.colours.length}>
           {checkList("colours", options.colours, true)}
         </Group>
       )}
 
       {options.lengths.length > 0 && (
-        <Group title="Dress length" active={filters.lengths.length}>
+        <Group title={t("Dress length")} active={filters.lengths.length}>
           {checkList("lengths", options.lengths)}
         </Group>
       )}
 
       {options.occasions.length > 0 && (
-        <Group title="Occasion" active={filters.occasions.length}>
+        <Group title={t("Occasion")} active={filters.occasions.length}>
           {checkList("occasions", options.occasions)}
         </Group>
       )}
 
       {options.priceRange && (
         <Group
-          title="Price"
+          title={t("Price")}
           active={(filters.minPrice !== undefined ? 1 : 0) + (filters.maxPrice !== undefined ? 1 : 0)}
         >
           <PriceRange
@@ -151,7 +157,7 @@ export function CollectionFilters({
         </Group>
       )}
 
-      <Group title="Availability" active={(filters.inStock ? 1 : 0) + (filters.onSale ? 1 : 0)}>
+      <Group title={t("Availability")} active={(filters.inStock ? 1 : 0) + (filters.onSale ? 1 : 0)}>
         <label className={optionRow}>
           <input
             type="checkbox"
@@ -159,7 +165,7 @@ export function CollectionFilters({
             checked={filters.inStock}
             onChange={() => onChange({ ...filters, inStock: !filters.inStock })}
           />
-          In stock only
+          {t("In stock only")}
         </label>
         {options.hasSale && (
           <label className={optionRow}>
@@ -169,7 +175,7 @@ export function CollectionFilters({
               checked={filters.onSale}
               onChange={() => onChange({ ...filters, onSale: !filters.onSale })}
             />
-            On sale
+            {t("On sale")}
           </label>
         )}
       </Group>
@@ -188,6 +194,7 @@ function PriceRange({
   max?: number;
   onApply: (min?: number, max?: number) => void;
 }) {
+  const { t, money } = useI18n();
   const [from, setFrom] = useState(min === undefined ? "" : String(min));
   const [to, setTo] = useState(max === undefined ? "" : String(max));
 
@@ -209,7 +216,7 @@ function PriceRange({
       }}
     >
       <label className="grid gap-1 text-[12px] text-[#786565]">
-        From (€)
+        {t("From (€)")}
         <input
           type="number"
           inputMode="decimal"
@@ -222,7 +229,7 @@ function PriceRange({
         />
       </label>
       <label className="grid gap-1 text-[12px] text-[#786565]">
-        To (€)
+        {t("To (€)")}
         <input
           type="number"
           inputMode="decimal"
@@ -235,10 +242,10 @@ function PriceRange({
         />
       </label>
       <button type="submit" className="h-11 border border-[#211c1d] px-3 text-[12px] uppercase tracking-[1px] hover:bg-[#211c1d] hover:text-white">
-        Go
+        {t("Go")}
       </button>
       <p className="col-span-3 m-0 text-[12px] text-[#786565]">
-        Prices here: {money(range.min)} – {money(range.max)}
+        {t("Prices here: {min} – {max}", { min: money(range.min), max: money(range.max) })}
       </p>
     </form>
   );

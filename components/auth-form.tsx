@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowLeft, Check, ChevronDown, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 
+import { useI18n } from "./i18n";
 import { AuthUser, useStore } from "./store";
 
 type Mode = "login" | "register";
@@ -28,13 +29,25 @@ const passwordRules = [
 ];
 
 const countryCodes = [
+  { code: "DE", dial: "+49", placeholder: "1512 3456789" },
+  { code: "AT", dial: "+43", placeholder: "664 1234567" },
+  { code: "CH", dial: "+41", placeholder: "78 123 45 67" },
+  { code: "GB", dial: "+44", placeholder: "7400 123456" },
+  { code: "US", dial: "+1", placeholder: "201 555 0123" },
   { code: "PK", dial: "+92", placeholder: "300 1234567" },
   { code: "AE", dial: "+971", placeholder: "50 123 4567" },
   { code: "SA", dial: "+966", placeholder: "50 123 4567" },
-  { code: "GB", dial: "+44", placeholder: "7400 123456" },
-  { code: "DE", dial: "+49", placeholder: "1512 3456789" },
-  { code: "US", dial: "+1", placeholder: "201 555 0123" },
 ];
+
+/**
+ * Server messages arrive in English; most are translated as they are. The
+ * sign-in lockout carries a number of minutes, so it is rebuilt here.
+ */
+function translateServerError(message: string, t: (text: string, vars?: Record<string, string | number>) => string) {
+  const lockout = message.match(/^Too many failed attempts\. Please wait (\d+) minutes?/);
+  if (lockout) return t("Too many failed attempts. Please wait {minutes} min and try again.", { minutes: lockout[1] });
+  return t(message);
+}
 
 // Shared look for every text input.
 const inputClass =
@@ -47,6 +60,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const searchParams = useSearchParams();
   const next = safeNext(searchParams.get("next"));
   const { user, authReady, signIn } = useStore();
+  const { t } = useI18n();
 
   const [values, setValues] = useState({ name: "", email: "", phone: "", password: "", confirm: "" });
   const [country, setCountry] = useState(countryCodes[0]);
@@ -74,17 +88,17 @@ export function AuthPage({ mode }: { mode: Mode }) {
 
   function validate(): FieldErrors {
     const found: FieldErrors = {};
-    if (isRegister && values.name.trim().length < 2) found.name = "Please enter your full name.";
-    if (!EMAIL_PATTERN.test(values.email.trim())) found.email = "Please enter a valid email address.";
+    if (isRegister && values.name.trim().length < 2) found.name = t("Please enter your full name.");
+    if (!EMAIL_PATTERN.test(values.email.trim())) found.email = t("Please enter a valid email address.");
     if (isRegister && values.phone.trim() && !/^[\d\s-]{6,15}$/.test(values.phone.trim())) {
-      found.phone = "Please enter a valid phone number.";
+      found.phone = t("Please enter a valid phone number.");
     }
-    if (!values.password) found.password = "Please enter your password.";
+    if (!values.password) found.password = t("Please enter your password.");
     else if (isRegister && !passwordRules.every((rule) => rule.test(values.password))) {
-      found.password = "Your password doesn't meet the requirements yet.";
+      found.password = t("Your password doesn't meet the requirements yet.");
     }
-    if (isRegister && values.confirm !== values.password) found.confirm = "Passwords don't match.";
-    if (isRegister && !acceptTerms) found.acceptTerms = "Please accept the Terms and Privacy Policy.";
+    if (isRegister && values.confirm !== values.password) found.confirm = t("Passwords don't match.");
+    if (isRegister && !acceptTerms) found.acceptTerms = t("Please accept the Terms and Privacy Policy.");
     return found;
   }
 
@@ -119,7 +133,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
         field?: FieldName;
       };
       if (!response.ok || !data.user) {
-        const message = data.error ?? "Something went wrong. Please try again.";
+        const message = data.error ? translateServerError(data.error, t) : t("Something went wrong. Please try again.");
         if (data.field) {
           setErrors({ [data.field]: message });
           document.getElementById(`auth-${data.field}`)?.focus();
@@ -133,7 +147,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
       router.refresh();
       router.replace(destination(data.user));
     } catch {
-      setFormError("We couldn't reach the server. Check your connection and try again.");
+      setFormError(t("We couldn't reach the server. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -144,10 +158,10 @@ export function AuthPage({ mode }: { mode: Mode }) {
   return (
     <div className={"mx-auto w-full " + (isRegister ? "max-w-[760px]" : "max-w-[520px]")}>
       <header className="mb-6 flex items-center justify-between">
-        <Link href="/" aria-label="Dirndl Wear home">
+        <Link href="/" aria-label={t("Dirndl Wear home")}>
           <img
             src="/brand/dirndl-wear-wordmark.png"
-            alt="Dirndl Wear — Traditional Dresses"
+            alt={t("Dirndl Wear — Traditional Dresses")}
             width={220}
             height={41}
             className="h-auto w-[180px] sm:w-[220px]"
@@ -158,17 +172,17 @@ export function AuthPage({ mode }: { mode: Mode }) {
           className="group flex items-center gap-2 text-[15px] text-[#786565] transition-colors hover:text-[#781d2d]"
         >
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" aria-hidden="true" />
-          Back to store
+          {t("Back to store")}
         </Link>
       </header>
       <div className="rounded-2xl border border-[#eadfdc] bg-white px-6 py-9 shadow-[0_1px_2px_rgb(33_28_29_/_4%),0_20px_50px_rgb(74_20_32_/_7%)] sm:px-10 sm:py-11">
         <h1 className="font-serif text-[36px] font-medium leading-tight text-[#211c1d] sm:text-[44px]">
-          {isRegister ? "Create your account" : "Welcome back"}
+          {isRegister ? t("Create your account") : t("Welcome back")}
         </h1>
         <p className="mb-8 mt-2.5 text-[16px] text-[#786565]">
           {isRegister
-            ? "Track orders, save your wishlist and check out faster."
-            : "Sign in to track your orders and check out faster."}
+            ? t("Track orders, save your wishlist and check out faster.")
+            : t("Sign in to track your orders and check out faster.")}
         </p>
 
         {formError && (
@@ -184,20 +198,20 @@ export function AuthPage({ mode }: { mode: Mode }) {
         <form noValidate onSubmit={submit}>
           {isRegister && (
             <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
-              <label htmlFor="auth-website">Leave this field empty</label>
+              <label htmlFor="auth-website">{t("Leave this field empty")}</label>
               <input id="auth-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
             </div>
           )}
 
           <div className={"grid gap-x-5 gap-y-6" + (isRegister ? " sm:grid-cols-2" : "")}>
             {isRegister && (
-              <Field id="auth-name" label="Full name" error={errors.name}>
+              <Field id="auth-name" label={t("Full name")} error={errors.name}>
                 {(describedBy) => (
                   <input
                     id="auth-name"
                     name="name"
                     autoComplete="name"
-                    placeholder="Ayesha Khan"
+                    placeholder={t("Anna Müller")}
                     value={values.name}
                     onChange={set("name")}
                     aria-invalid={Boolean(errors.name)}
@@ -208,7 +222,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
               </Field>
             )}
 
-            <Field id="auth-email" label="Email" error={errors.email}>
+            <Field id="auth-email" label={t("Email")} error={errors.email}>
               {(describedBy) => (
                 <input
                   id="auth-email"
@@ -216,7 +230,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
                   type="email"
                   inputMode="email"
                   autoComplete="email"
-                  placeholder="you@example.com"
+                  placeholder={t("you@example.com")}
                   value={values.email}
                   onChange={set("email")}
                   aria-invalid={Boolean(errors.email)}
@@ -227,12 +241,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
             </Field>
 
             {isRegister && (
-              <Field id="auth-phone" label="Phone number" optional error={errors.phone} wide>
+              <Field id="auth-phone" label={t("Phone number")} optional error={errors.phone} wide>
                 {(describedBy) => (
                   <div className="flex gap-2.5">
                     <div className="relative flex-none">
                       <label htmlFor="auth-country" className="sr-only">
-                        Country code
+                        {t("Country code")}
                       </label>
                       <select
                         id="auth-country"
@@ -279,16 +293,16 @@ export function AuthPage({ mode }: { mode: Mode }) {
 
             <Field
               id="auth-password"
-              label="Password"
+              label={t("Password")}
               error={errors.password}
-              hint={capsLock ? "Caps Lock is on." : undefined}
+              hint={capsLock ? t("Caps Lock is on.") : undefined}
             >
               {(describedBy) => (
                 <PasswordInput
                   id="auth-password"
                   name="password"
                   autoComplete={isRegister ? "new-password" : "current-password"}
-                  placeholder={isRegister ? "Create a strong password" : "Your password"}
+                  placeholder={isRegister ? t("Create a strong password") : t("Your password")}
                   value={values.password}
                   onChange={set("password")}
                   shown={showPassword}
@@ -302,13 +316,13 @@ export function AuthPage({ mode }: { mode: Mode }) {
             </Field>
 
             {isRegister && (
-              <Field id="auth-confirm" label="Confirm password" error={errors.confirm}>
+              <Field id="auth-confirm" label={t("Confirm password")} error={errors.confirm}>
                 {(describedBy) => (
                   <PasswordInput
                     id="auth-confirm"
                     name="confirm"
                     autoComplete="new-password"
-                    placeholder="Repeat password"
+                    placeholder={t("Repeat password")}
                     value={values.confirm}
                     onChange={set("confirm")}
                     shown={showConfirm}
@@ -322,10 +336,11 @@ export function AuthPage({ mode }: { mode: Mode }) {
           </div>
 
           {isRegister && (
-            <ul className="mt-4 grid gap-x-5 gap-y-2.5 sm:grid-cols-2" aria-label="Password requirements">
+            <ul className="mt-4 grid gap-x-5 gap-y-2.5 sm:grid-cols-2" aria-label={t("Password requirements")}>
               {[
                 ...passwordRules.map((rule) => ({ label: rule.label, ok: rule.test(values.password) })),
                 { label: "Passwords match", ok: Boolean(values.confirm) && values.confirm === values.password },
+                // Labels stay in English as keys and are translated when shown.
               ].map((rule) => (
                 <li key={rule.label} className="flex items-center gap-2.5 text-[14px]">
                   <span
@@ -337,8 +352,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
                   >
                     {rule.ok && <Check size={11} strokeWidth={3} />}
                   </span>
-                  <span className={rule.ok ? "text-[#211c1d]" : "text-[#786565]"}>{rule.label}</span>
-                  <span className="sr-only">{rule.ok ? "(met)" : "(not met yet)"}</span>
+                  <span className={rule.ok ? "text-[#211c1d]" : "text-[#786565]"}>{t(rule.label)}</span>
+                  <span className="sr-only">{rule.ok ? t("(met)") : t("(not met yet)")}</span>
                 </li>
               ))}
             </ul>
@@ -360,19 +375,19 @@ export function AuthPage({ mode }: { mode: Mode }) {
                   className="h-[19px] w-[19px] flex-none cursor-pointer rounded accent-[#781d2d]"
                 />
                 <span>
-                  I agree to the{" "}
+                  {t("I agree to the")}{" "}
                   <Link
                     href="/pages/legal-notice"
                     className="font-medium text-[#211c1d] hover:text-[#781d2d] hover:underline"
                   >
-                    Terms of Service
+                    {t("Terms of Service")}
                   </Link>{" "}
-                  and{" "}
+                  {t("and")}{" "}
                   <Link
                     href="/pages/privacy-policy"
                     className="font-medium text-[#211c1d] hover:text-[#781d2d] hover:underline"
                   >
-                    Privacy Policy
+                    {t("Privacy Policy")}
                   </Link>
                 </span>
               </label>
@@ -392,17 +407,17 @@ export function AuthPage({ mode }: { mode: Mode }) {
             {submitting && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
             {submitting
               ? isRegister
-                ? "Creating account…"
-                : "Signing in…"
+                ? t("Creating account…")
+                : t("Signing in…")
               : isRegister
-                ? "Create account"
-                : "Sign in"}
+                ? t("Create account")
+                : t("Sign in")}
           </button>
         </form>
 
         <div className="my-7 flex items-center gap-4 text-[13px] uppercase tracking-[1.5px] text-[#a99594]">
           <span className="h-px flex-1 bg-[#eee6e3]" />
-          or
+          {t("or")}
           <span className="h-px flex-1 bg-[#eee6e3]" />
         </div>
 
@@ -411,12 +426,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
           replace
           className="flex h-[54px] w-full items-center justify-center rounded-full border border-[#e3d8d5] text-[16px] text-[#211c1d] transition-colors hover:border-[#781d2d] hover:text-[#781d2d]"
         >
-          {isRegister ? "I already have an account" : "Create a new account"}
+          {isRegister ? t("I already have an account") : t("Create a new account")}
         </Link>
 
         <p className="mt-7 flex items-center justify-center gap-2 text-center text-[13px] text-[#786565]">
           <ShieldCheck size={15} className="flex-none text-[#781d2d]" aria-hidden="true" />
-          Your password is encrypted and never stored in plain text.
+          {t("Your password is encrypted and never stored in plain text.")}
         </p>
       </div>
     </div>
@@ -442,12 +457,13 @@ function Field({
   children: (describedBy: string | undefined) => React.ReactNode;
 }) {
   const messageId = useId();
+  const { t } = useI18n();
   const message = error ?? hint;
   return (
     <div className={wide ? "sm:col-span-2" : undefined}>
       <label htmlFor={id} className="mb-2.5 flex items-baseline justify-between text-[16px] font-medium text-[#211c1d]">
         {label}
-        {optional && <span className="text-[13px] font-normal text-[#a99594]">Optional</span>}
+        {optional && <span className="text-[13px] font-normal text-[#a99594]">{t("Optional")}</span>}
       </label>
       {children(message ? messageId : undefined)}
       {message && (
@@ -471,6 +487,7 @@ function PasswordInput({
   error?: string;
   describedBy?: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className="relative">
       <input
@@ -483,7 +500,7 @@ function PasswordInput({
       <button
         type="button"
         onClick={onToggle}
-        aria-label={shown ? "Hide password" : "Show password"}
+        aria-label={shown ? t("Hide password") : t("Show password")}
         aria-pressed={shown}
         className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-[#786565] transition-colors hover:bg-[#f6eeec] hover:text-[#781d2d]"
       >

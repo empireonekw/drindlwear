@@ -1,8 +1,12 @@
 import { audiences, colorFamilies, occasions, Product } from "./data";
+import { translate } from "./i18n";
 
-/** Everything a shopper might type to find a product, lower-cased. */
+/**
+ * Everything a shopper might type to find a product, lower-cased, in English
+ * and German (so "Bluse" finds blouses and "grün" finds green dirndls).
+ */
 function haystack(product: Product) {
-  return [
+  const words = [
     product.name,
     product.category,
     product.color,
@@ -10,10 +14,8 @@ function haystack(product: Product) {
     audiences.find((audience) => audience.value === product.audience)?.label,
     ...(product.occasions ?? []).map((value) => occasions.find((o) => o.value === value)?.label),
     product.material,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+  ].filter((word): word is string => Boolean(word));
+  return [...words, ...words.map((word) => translate("de", word))].join(" ").toLowerCase();
 }
 
 /**

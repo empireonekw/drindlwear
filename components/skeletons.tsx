@@ -4,6 +4,8 @@
  * content arrives. They copy the real page's layout so nothing jumps.
  */
 
+import { LoadingLabel } from "./loading-label";
+
 type BoneProps = { className?: string };
 
 /** One grey placeholder block. Size and shape come from `className`. */
@@ -18,7 +20,7 @@ export function Bone({ className = "" }: BoneProps) {
 function Loading({ label, className = "", children }: { label: string; className?: string; children: React.ReactNode }) {
   return (
     <div role="status" aria-live="polite" className={"!animate-none " + className}>
-      <span className="sr-only">Loading {label}…</span>
+      <LoadingLabel label={label} />
       {children}
     </div>
   );

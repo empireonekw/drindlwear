@@ -1,4 +1,4 @@
-import { money } from "./data";
+import type { I18n } from "./i18n";
 
 /**
  * The store's customer promises, in one place. Every page that mentions
@@ -36,15 +36,18 @@ export function deliveryCharge(amount: number) {
   return amount <= 0 ? 0 : (storePolicy.deliveryFee ?? 0);
 }
 
-/** How the shipping line reads in the cart and checkout. */
-export const deliveryLabel = (charge: number) => (deliveryDecided ? money(charge) : "To be confirmed");
+/** How the shipping line reads in the cart and checkout, in the shop's language. */
+export const deliveryLabel = (charge: number, { t, money }: Pick<I18n, "t" | "money">) =>
+  deliveryDecided ? money(charge) : t("To be confirmed");
 
-/** Short promise lines, used in the announcement bar, menus and product pages. */
-export const promiseText = {
-  deliveryTime: `Delivered in ${storePolicy.deliveryTime}`,
-  shippingCost: deliveryDecided
-    ? `${money(storePolicy.deliveryFee ?? 0)} shipping per order`
-    : "Shipping costs to be confirmed",
-  exchange: `${storePolicy.exchangeDays}-day size exchange`,
-  bankTransfer: "Secure payment by bank transfer",
-};
+/** Short promise lines, used in the announcement bar, menus and product pages, in the shop's language. */
+export function promiseText({ t, money }: Pick<I18n, "t" | "money">) {
+  return {
+    deliveryTime: t("Delivered in {time}", { time: t(storePolicy.deliveryTime) }),
+    shippingCost: deliveryDecided
+      ? t("{amount} shipping per order", { amount: money(storePolicy.deliveryFee ?? 0) })
+      : t("Shipping costs to be confirmed"),
+    exchange: t("{days}-day size exchange", { days: storePolicy.exchangeDays }),
+    bankTransfer: t("Secure payment by bank transfer"),
+  };
+}

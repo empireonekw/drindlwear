@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 
+import { useI18n } from "@/components/i18n";
 import { useStore } from "@/components/store";
-import { CartItem, lineLimit, money, Product, requiresSize } from "@/lib/data";
+import { CartItem, lineLimit, Product, requiresSize } from "@/lib/data";
 import { setDiscounts, totalSetDiscount } from "@/lib/sets";
 import { deliveryCharge, deliveryDecided, deliveryLabel } from "@/lib/store-policy";
 
@@ -14,6 +15,8 @@ type Row = CartItem & { product: Product };
 
 export default function Cart() {
   const { items, products, sets, quantity, remove } = useStore();
+  const i18n = useI18n();
+  const { t, money } = i18n;
   const rows: Row[] = items.flatMap((item) => {
     const product = products.find((entry) => entry.id === item.id);
     return product ? [{ ...item, product }] : [];
@@ -42,7 +45,7 @@ export default function Cart() {
   const renderRow = (row: Row) => {
     const { id, qty, size, setId, product } = row;
     const available = limit(row);
-    const sizeNote = size ? ` in size ${size}` : "";
+    const sizeNote = size ? " " + t("in size {size}", { size }) : "";
     return (
       <li key={`${id}-${size ?? ""}-${setId ?? ""}`} className="flex gap-5 border-b border-[#eadfdc] py-5 max-[520px]:gap-3">
         <img src={product.image} alt="" className="h-[135px] w-[100px] shrink-0 object-cover max-[520px]:h-[110px] max-[520px]:w-[82px]" />
@@ -51,28 +54,28 @@ export default function Cart() {
             {product.name}
           </Link>
           <p className="m-0 mt-1 text-sm text-[#786565]">
-            {product.color}
-            {size ? ` · Size ${size}` : ""}
+            {t(product.color)}
+            {size ? ` · ${t("Size {size}", { size })}` : ""}
           </p>
           {missingSize(row) ? (
             <p role="alert" className="m-0 mt-1 text-[13px] text-[#781d2d]">
-              No size chosen.{" "}
-              <Link className="underline" href={`/product/${id}`}>Choose a size</Link> and remove this line.
+              {t("No size chosen.")}{" "}
+              <Link className="underline" href={`/product/${id}`}>{t("Choose a size")}</Link> {t("and remove this line.")}
             </p>
           ) : available <= 0 ? (
-            <p role="alert" className="m-0 mt-1 text-[13px] text-[#781d2d]">Out of stock{sizeNote}</p>
+            <p role="alert" className="m-0 mt-1 text-[13px] text-[#781d2d]">{t("Out of stock")}{sizeNote}</p>
           ) : qty > available ? (
             <p role="alert" className="m-0 mt-1 text-[13px] text-[#781d2d]">
-              Only {available} left{sizeNote}. Reduce quantity to continue.
+              {t("Only {count} left", { count: available })}{sizeNote}. {t("Reduce quantity to continue.")}
             </p>
           ) : available <= 3 ? (
-            <p className="m-0 mt-1 text-[13px] text-[#786565]">Only {available} left{sizeNote}</p>
+            <p className="m-0 mt-1 text-[13px] text-[#786565]">{t("Only {count} left", { count: available })}{sizeNote}</p>
           ) : null}
           <div className="mt-3 flex items-center gap-4">
             <div className="flex items-center border border-[#cfc3bf]">
               <button
                 type="button"
-                aria-label={`Decrease ${product.name} quantity`}
+                aria-label={t("Decrease {name} quantity", { name: product.name })}
                 onClick={() => quantity(id, qty - 1, size, setId)}
                 className="h-9 w-9"
               >
@@ -81,7 +84,7 @@ export default function Cart() {
               <span className="min-w-6 text-center text-sm">{qty}</span>
               <button
                 type="button"
-                aria-label={`Increase ${product.name} quantity`}
+                aria-label={t("Increase {name} quantity", { name: product.name })}
                 disabled={qty >= available}
                 onClick={() => quantity(id, qty + 1, size, setId)}
                 className="h-9 w-9 disabled:text-[#c9bdb9]"
@@ -90,7 +93,7 @@ export default function Cart() {
               </button>
             </div>
             <button type="button" onClick={() => remove(id, size, setId)} className="text-xs underline underline-offset-2">
-              Remove
+              {t("Remove")}
             </button>
           </div>
         </div>
@@ -101,12 +104,12 @@ export default function Cart() {
 
   return (
     <div className="mx-auto max-w-[1360px] px-8 max-[520px]:px-4">
-      <h1 className="m-0 mt-9 text-center font-serif text-[42px] font-normal text-[#781d2d]">Cart</h1>
+      <h1 className="m-0 mt-9 text-center font-serif text-[42px] font-normal text-[#781d2d]">{t("Cart")}</h1>
       {!rows.length ? (
         <div className="py-24 text-center text-[#786565]">
-          <p>Your cart is empty.</p>
+          <p>{t("Your cart is empty.")}</p>
           <Link href="/collections/all" className={`${primaryButton} mt-4 w-auto`}>
-            Continue shopping
+            {t("Continue shopping")}
           </Link>
         </div>
       ) : (
@@ -115,25 +118,25 @@ export default function Cart() {
             {setGroups.map((group) => (
               <section
                 key={group.set.id}
-                aria-label={group.set.name}
+                aria-label={t(group.set.name)}
                 className="mb-6 border border-[#eadfdb] bg-white px-5 pt-4 max-[520px]:px-3"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[#eadfdc] pb-3">
                   <Link href={`/sets/${group.set.id}`} className="font-serif text-[22px] text-[#781d2d] hover:underline">
-                    {group.set.name}
+                    {t(group.set.name)}
                   </Link>
                   {group.amount > 0 && (
                     <span className="text-sm font-semibold text-[#1f6b44]">
-                      Set price · you save {money(group.amount)}
+                      {t("Set price · you save {amount}", { amount: money(group.amount) })}
                     </span>
                   )}
                 </div>
                 {group.incomplete && (
                   <p className="m-0 mt-3 bg-[#f6eeec] px-3 py-2 text-[13px]">
                     {group.completeSets === 0
-                      ? "A piece of this set is missing, so the set price doesn't apply."
-                      : "Some pieces have extra quantity; the set price applies to complete sets only."}{" "}
-                    <Link href={`/sets/${group.set.id}`} className="underline">View set</Link>
+                      ? t("A piece of this set is missing, so the set price doesn't apply.")
+                      : t("Some pieces have extra quantity; the set price applies to complete sets only.")}{" "}
+                    <Link href={`/sets/${group.set.id}`} className="underline">{t("View set")}</Link>
                   </p>
                 )}
                 <ul className="m-0 list-none p-0 [&>li:last-child]:border-b-0">{group.rows.map(renderRow)}</ul>
@@ -143,34 +146,34 @@ export default function Cart() {
           </div>
 
           <aside className="h-max bg-[#fbf5f2] p-7">
-            <h2 className="m-0 font-serif text-[26px] font-normal">Order summary</h2>
+            <h2 className="m-0 font-serif text-[26px] font-normal">{t("Order summary")}</h2>
             <dl className="m-0 mt-4 text-sm">
               <div className="flex justify-between border-b border-[#eadfdc] py-4">
-                <dt>Subtotal</dt>
+                <dt>{t("Subtotal")}</dt>
                 <dd className="m-0 font-semibold">{money(subtotal)}</dd>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between border-b border-[#eadfdc] py-4 text-[#1f6b44]">
-                  <dt>Set savings</dt>
+                  <dt>{t("Set savings")}</dt>
                   <dd className="m-0 font-semibold">−{money(discount)}</dd>
                 </div>
               )}
               <div className="flex justify-between border-b border-[#eadfdc] py-4">
-                <dt>Shipping</dt>
-                <dd className={`m-0 ${deliveryDecided ? "" : "text-[#786565]"}`}>{deliveryLabel(delivery)}</dd>
+                <dt>{t("Shipping")}</dt>
+                <dd className={`m-0 ${deliveryDecided ? "" : "text-[#786565]"}`}>{deliveryLabel(delivery, i18n)}</dd>
               </div>
               <div className="flex justify-between py-4 text-base">
-                <dt className="font-semibold">Total</dt>
+                <dt className="font-semibold">{t("Total")}</dt>
                 <dd className="m-0 font-semibold">{money(total)}</dd>
               </div>
             </dl>
             {inventoryIssue ? (
               <button type="button" className={primaryButton} disabled>
-                Update cart to check out
+                {t("Update cart to check out")}
               </button>
             ) : (
               <Link className={primaryButton} href="/checkout">
-                Proceed to checkout
+                {t("Proceed to checkout")}
               </Link>
             )}
           </aside>

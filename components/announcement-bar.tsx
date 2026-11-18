@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useI18n } from "./i18n";
+
 /** The three lines shown in the bar. */
 const promises = ["Delivery in 2–5 business days", "Easy returns", "Quality since more than 50 years"];
 
@@ -11,6 +13,7 @@ const promises = ["Delivery in 2–5 business days", "Easy returns", "Quality si
  */
 export function AnnouncementBar({ hidden }: { hidden?: boolean }) {
   const [index, setIndex] = useState(0);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -20,7 +23,7 @@ export function AnnouncementBar({ hidden }: { hidden?: boolean }) {
 
   return (
     <div
-      aria-label="Store promises"
+      aria-label={t("Store promises")}
       aria-hidden={hidden}
       className={
         "bg-burgundy text-white" + (hidden ? " max-[850px]:hidden" : "")
@@ -31,7 +34,7 @@ export function AnnouncementBar({ hidden }: { hidden?: boolean }) {
         {promises.map((text, i) => (
           <li key={text} className="flex items-center">
             {i > 0 && <span aria-hidden="true" className="mx-7 h-[11px] w-px bg-white/45" />}
-            <span className="text-[11.5px] font-medium uppercase tracking-[0.8px]">{text}</span>
+            <span className="text-[11.5px] font-medium uppercase tracking-[0.8px]">{t(text)}</span>
           </li>
         ))}
       </ul>
@@ -42,7 +45,7 @@ export function AnnouncementBar({ hidden }: { hidden?: boolean }) {
           key={index}
           className="truncate text-[10.5px] font-medium uppercase tracking-[0.7px] motion-safe:animate-announce-in"
         >
-          {promises[index]}
+          {t(promises[index])}
         </span>
       </p>
     </div>

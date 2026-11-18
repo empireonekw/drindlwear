@@ -7,15 +7,16 @@ import { useState } from "react";
 import {
   availableStock,
   colorSwatches,
-  money,
   Product,
   productSizes,
   requiresSize,
 } from "@/lib/data";
+import { useI18n } from "./i18n";
 import { useStore } from "./store";
 
 export function ProductCard({ p }: { p: Product }) {
   const { add, toggleWish, wishlist } = useStore();
+  const { t, money } = useI18n();
   const [feedback, setFeedback] = useState<{ text: string; ok: boolean } | null>(null);
 
   const outOfStock = p.stock <= 0;
@@ -27,22 +28,22 @@ export function ProductCard({ p }: { p: Product }) {
     ? productSizes.filter((size) => availableStock(p, size) > 0)
     : [];
   const badge = outOfStock
-    ? { text: "Sold out", className: "bg-[#211c1d] text-white" }
+    ? { text: t("Sold out"), className: "bg-[#211c1d] text-white" }
     : discount > 0
       ? { text: `−${discount}%`, className: "bg-[#781d2d] text-white" }
       : p.stock <= 3
-        ? { text: `Only ${p.stock} left`, className: "bg-white text-[#781d2d]" }
+        ? { text: t("Only {count} left", { count: p.stock }), className: "bg-white text-[#781d2d]" }
         : null;
 
   function quickAdd(size?: string) {
     if (!add(p.id, 1, size)) {
       setFeedback({
-        text: size ? `No more stock in size ${size}` : "No more stock available",
+        text: size ? t("No more stock in size {size}", { size }) : t("No more stock available"),
         ok: false,
       });
       return;
     }
-    setFeedback({ text: size ? `Added size ${size} to cart` : "Added to cart", ok: true });
+    setFeedback({ text: size ? t("Added size {size} to cart", { size }) : t("Added to cart"), ok: true });
   }
 
   return (
@@ -73,7 +74,7 @@ export function ProductCard({ p }: { p: Product }) {
 
         <button
           type="button"
-          aria-label={wished ? `Remove ${p.name} from wishlist` : `Save ${p.name} to wishlist`}
+          aria-label={wished ? t("Remove {name} from wishlist", { name: p.name }) : t("Save {name} to wishlist", { name: p.name })}
           aria-pressed={wished}
           onClick={() => toggleWish(p.id)}
           className="absolute right-2.5 top-2.5 grid h-10 w-10 place-items-center rounded-full bg-white text-[#781d2d] shadow-sm"
@@ -87,13 +88,13 @@ export function ProductCard({ p }: { p: Product }) {
             <div className="absolute inset-x-0 bottom-0 translate-y-full bg-white/95 p-3 transition-transform duration-200 group-focus-within:translate-y-0 group-hover:translate-y-0 [@media(hover:none)]:hidden">
               {needsSize ? (
                 <>
-                  <p className="m-0 mb-2 text-[10px] uppercase tracking-[1.4px] text-[#786565]">Quick add · size</p>
+                  <p className="m-0 mb-2 text-[10px] uppercase tracking-[1.4px] text-[#786565]">{t("Quick add · size")}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {sizesLeft.map((size) => (
                       <button
                         key={size}
                         type="button"
-                        aria-label={`Add ${p.name} in size ${size} to cart`}
+                        aria-label={t("Add {name} in size {size} to cart", { name: p.name, size })}
                         onClick={() => quickAdd(size)}
                         className="h-9 min-w-10 border border-[#cfc3bf] bg-white px-2 text-[13px] hover:border-[#781d2d] hover:bg-[#781d2d] hover:text-white"
                       >
@@ -108,7 +109,7 @@ export function ProductCard({ p }: { p: Product }) {
                   onClick={() => quickAdd()}
                   className="flex h-10 w-full items-center justify-center gap-2 bg-[#781d2d] text-[11px] uppercase tracking-[1.4px] text-white hover:bg-[#5e1622]"
                 >
-                  <ShoppingBag size={15} aria-hidden="true" /> Add to cart
+                  <ShoppingBag size={15} aria-hidden="true" /> {t("Add to cart")}
                 </button>
               )}
             </div>
@@ -120,7 +121,7 @@ export function ProductCard({ p }: { p: Product }) {
                   href={`/product/${p.id}`}
                   className="flex h-10 items-center justify-center gap-2 bg-white/95 text-[10px] uppercase tracking-[1.2px]"
                 >
-                  <ShoppingBag size={14} aria-hidden="true" /> Choose size
+                  <ShoppingBag size={14} aria-hidden="true" /> {t("Choose size")}
                 </Link>
               ) : (
                 <button
@@ -128,7 +129,7 @@ export function ProductCard({ p }: { p: Product }) {
                   onClick={() => quickAdd()}
                   className="flex h-10 w-full items-center justify-center gap-2 bg-white/95 text-[10px] uppercase tracking-[1.2px]"
                 >
-                  <ShoppingBag size={14} aria-hidden="true" /> Add to cart
+                  <ShoppingBag size={14} aria-hidden="true" /> {t("Add to cart")}
                 </button>
               )}
             </div>
@@ -148,18 +149,18 @@ export function ProductCard({ p }: { p: Product }) {
               style={{ background: colorSwatches[p.colorFamily] }}
             />
           )}
-          {p.color}
+          {t(p.color)}
         </span>
         <div className="flex flex-wrap items-baseline gap-x-2">
           <strong className={discount ? "text-[#781d2d]" : ""}>{money(p.price)}</strong>
           {p.oldPrice && <del className="text-[#786565]">{money(p.oldPrice)}</del>}
         </div>
         {outOfStock ? (
-          <span className="text-[12px] text-[#781d2d]">Sold out</span>
+          <span className="text-[12px] text-[#781d2d]">{t("Sold out")}</span>
         ) : (
           sizesLeft.length > 0 && (
             <span className="text-[12px] text-[#786565]">
-              <span className="sr-only">Sizes available: </span>
+              <span className="sr-only">{t("Sizes available:")} </span>
               {sizesLeft.join(" · ")}
             </span>
           )
@@ -170,7 +171,7 @@ export function ProductCard({ p }: { p: Product }) {
             {feedback.ok && (
               <>
                 {" · "}
-                <Link href="/cart" className="underline underline-offset-2">View cart</Link>
+                <Link href="/cart" className="underline underline-offset-2">{t("View cart")}</Link>
               </>
             )}
           </span>
