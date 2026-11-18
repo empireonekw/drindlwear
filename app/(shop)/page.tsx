@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Hero } from "@/components/hero";
 import { useI18n } from "@/components/i18n";
+import { VideoShowcase } from "@/components/video-showcase";
 import { ProductGrid } from "@/components/product";
 import { useStore } from "@/components/store";
 
@@ -54,6 +55,9 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      {/* Two short films, staggered, right above "Made for special moments". */}
+      <VideoShowcase />
 
       <section className="editorial [display:grid] [grid-template-columns:1fr_1fr] [min-height:500px] [background:#f5e9e5] [&_img]:[width:100%] [&_img]:[height:100%] [&_img]:[object-fit:cover] [&_img]:[max-height:550px] max-[520px]:[grid-template-columns:1fr] max-[850px]:[grid-template-columns:minmax(0,_1fr)] motion-safe:[&_img]:[transition:transform_650ms_cubic-bezier(0.2,_0.7,_0.2,_1)] motion-safe:[&_img:hover]:[transform:scale(1.045)]">
         <img src="/images/asset-02.jpeg" alt={t("Collection")} />
