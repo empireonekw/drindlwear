@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronDown, Heart, Landmark, Ruler, RotateCcw, Truck } from "lucide-react";
 
+import { FitFinder } from "@/components/fit-finder";
 import { useI18n } from "@/components/i18n";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductGrid } from "@/components/product";
@@ -21,6 +22,7 @@ import {
 } from "@/lib/data";
 import { completeTheLook, similarProducts } from "@/lib/recommendations";
 import { setPricing } from "@/lib/sets";
+import { sizeChartFor } from "@/lib/size-guide";
 import { promiseText } from "@/lib/store-policy";
 
 const primaryButton =
@@ -73,6 +75,15 @@ function ProductView({ product }: { product: Product }) {
     return pricing?.available ? [{ set, pricing }] : [];
   });
   const similar = similarProducts(product, products, look);
+  const sizeChart = needsSize ? sizeChartFor(product) : null;
+
+  /** Selecting a size, from a size button or the fit finder: fresh quantity and messages. */
+  function chooseSize(option: string) {
+    setSize(option);
+    setQuantity(1);
+    setAdded(false);
+    setMessage("");
+  }
 
   // Mobile: show the sticky bar once the main "Add to cart" button scrolls away.
   useEffect(() => {
@@ -219,12 +230,7 @@ function ProductView({ product }: { product: Product }) {
                       aria-pressed={selected}
                       disabled={soldOut}
                       aria-label={soldOut ? t("Size {size}, sold out", { size: option }) : left <= 3 ? t("Size {size}, only {count} left", { size: option, count: left }) : t("Size {size}", { size: option })}
-                      onClick={() => {
-                        setSize(option);
-                        setQuantity(1);
-                        setAdded(false);
-                        setMessage("");
-                      }}
+                      onClick={() => chooseSize(option)}
                       className={
                         "relative h-12 border text-[15px] transition " +
                         (soldOut
@@ -246,6 +252,15 @@ function ProductView({ product }: { product: Product }) {
                 <p className="m-0 mt-3 bg-[#f3e6e3] px-4 py-2.5 text-sm">
                   <strong>{t("Fit:")}</strong> {t(product.fit)}
                 </p>
+              )}
+              {sizeChart && (
+                <FitFinder
+                  product={product}
+                  chart={sizeChart}
+                  selectedSize={size}
+                  onSelect={chooseSize}
+                  onOpenGuide={() => sizeGuide.current?.open()}
+                />
               )}
             </div>
           )}
