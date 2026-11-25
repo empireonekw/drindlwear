@@ -151,7 +151,8 @@ async function handleGET(request: Request) {
   const admin = await getAdmin().catch(() => null);
   if (!admin) return jsonError(403, "Admins only.");
 
-  const origin = process.env.INTERNAL_BASE_URL || new URL(request.url).origin;
+  // The app's own local address (set by server.mjs); the request's origin is wrong behind nginx.
+  const origin = process.env.INTERNAL_BASE_URL || process.env.DW_SELF_URL || new URL(request.url).origin;
   const nodes: Record<string, NodeState> = {};
 
   // Health checks (cached 8 s).
@@ -244,7 +245,7 @@ async function handleGET(request: Request) {
   const configChecks: Check[] = [
     process.env.MONGODB_URI ? { label: "MONGODB_URI", level: "ok", detail: "Set." } : { label: "MONGODB_URI", level: "error", detail: "Missing: the store can't reach its database." },
     secret.length >= 32 ? { label: "AUTH_SECRET", level: "ok", detail: "Set and long enough." } : { label: "AUTH_SECRET", level: "error", detail: "Missing or shorter than 32 characters: rate limits can't work safely." },
-    process.env.ADMIN_EMAIL ? { label: "ADMIN_EMAIL", level: "ok", detail: "Set (used by npm run seed:admin)." } : { label: "ADMIN_EMAIL", level: "warn", detail: "Not set: the admin seed script can't run." },
+    process.env.ADMIN_EMAIL ? { label: "ADMIN_EMAIL", level: "ok", detail: "Set (used by npm run seed:admin)." } : { label: "ADMIN_EMAIL", level: "info", detail: "Not set. Only needed when creating an admin with npm run seed:admin; the shop runs fine without it." },
     { label: "Mode", level: production ? "ok" : "info", detail: production ? "Production build." : "Development server (slower, extra logging)." },
   ];
   nodes.config = { level: worst(configChecks), metric: production ? "Production" : "Development", checks: configChecks };

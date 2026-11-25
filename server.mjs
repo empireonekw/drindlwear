@@ -33,6 +33,15 @@ const distDir = argValue("--dist-dir");
 if (distDir) process.env.NEXT_DIST_DIR = distDir;
 
 // .env.local etc., the same files Next.js reads (AUTH_SECRET is needed below).
+// Where the app can reach itself (the admin System page's health checks). Behind
+// nginx a route sees its own address as https://localhost:<port>, but this server
+// speaks plain HTTP (nginx and Cloudflare do HTTPS), so self-checks built from that
+// address fail with "fetch failed". DW_SELF_URL is the exact local address; it is set
+// before .env files load because Next.js resets process.env to that first snapshot.
+// INTERNAL_BASE_URL in .env.local, if set, still takes precedence.
+const reachableHost = hostname === "0.0.0.0" || hostname === "::" ? "127.0.0.1" : hostname;
+process.env.DW_SELF_URL = `http://${reachableHost.includes(":") ? `[${reachableHost}]` : reachableHost}:${port}`;
+
 nextEnv.loadEnvConfig(process.cwd(), dev);
 
 const httpServer = createServer();
